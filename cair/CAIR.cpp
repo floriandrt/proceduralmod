@@ -898,6 +898,70 @@ bool CAIR_Add( CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_
 	return true;
 } //end CAIR_Add()
 
+bool addData(CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_convolution conv, CAIR_energy ener, bool (*CAIR_callback)(float), int total_seams, int seams_done){
+    //create local copies of the actual source image and its set of pointers
+    //we will resize this image down the number of adds in order to determine which pixels were removed
+    CML_image Resize_img((*Source_ptr).Width(),(*Source_ptr).Height());
+    CML_image_ptr Resize_img_ptr((*Source_ptr).Width(),(*Source_ptr).Height());
+    for(int y = 0; y < (*Source_ptr).Height(); y++)
+    {
+        for(int x = 0; x < (*Source_ptr).Width(); x++)
+        {
+            Resize_img(x,y).image = (*Source_ptr)(x,y)->image;
+            Resize_img(x,y).weight = (*Source_ptr)(x,y)->weight;
+            Resize_img(x,y).removed = false;
+            Resize_img_ptr(x,y) = &(Resize_img(x,y));
+        }
+    }
+
+    //remove all the least energy seams, setting the "removed" flag for each element
+//    if(CAIR_Remove(&Resize_img_ptr, (*Source_ptr).Width() - (goal_x - (*Source_ptr).Width()), conv, ener, CAIR_callback, total_seams, seams_done) == false)
+//    {
+//        return false;
+//    }
+
+    //bool CAIR_Remove( CML_image_ptr * Source, int goal_x, CAIR_convolution conv, CAIR_energy ener, bool (*CAIR_callback)(float), int total_seams, int seams_done )
+    int removes = Resize_img_ptr.Width() - ((*Source_ptr).Width() - (goal_x - (*Source_ptr).Width()));
+    int * Min_Path = new int[Resize_img_ptr.Height()];
+
+    //setup the images
+    Grayscale_Image( &Resize_img_ptr);
+    Edge_Detect( &Resize_img_ptr, conv );
+
+    //remove each seam
+    for( int i = 0; i < removes; i++ )
+    {
+        //If you're going to maintain some sort of progress counter/bar, here's where you would do it!
+        if( (CAIR_callback != NULL) && (CAIR_callback( (float)(i+seams_done)/total_seams ) == false) )
+        {
+            delete[] Min_Path;
+            return false;
+        }
+
+        //determine the least energy path
+        if( i == 0 )
+        {
+            //first time through, build the energy map
+            Energy_Path( &Resize_img_ptr, Min_Path, ener, true );
+        }
+        else
+        {
+            //next time through, only update the energy map from the last remove
+            Energy_Path( &Resize_img_ptr, Min_Path, ener, false );
+        }
+
+        //remove the seam from the image, update grayscale and edge values
+        Remove_Path( &Resize_img_ptr, Min_Path, conv );
+    }
+
+    delete[] Min_Path;
+
+    //enlarge the image now that we have our seam data
+    Add_Path(&Resize_img, Source, Source_ptr, goal_x);
+
+    return true;
+}
+
 //=========================================================================================================//
 //==                                             R E M O V E                                             ==//
 //=========================================================================================================//

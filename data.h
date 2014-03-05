@@ -2,7 +2,7 @@
 #define DATA_H
 
 #include <iostream>
-#include "Point.h"
+#include "point.h"
 #include <vector>
 
 class Data{

@@ -23,8 +23,9 @@ HEADERS += mainwindow.h \
     statebox.h \
     cornergrabber.h \
     ImageScene.h \
-    Point.h \
-    data.h
+    data.h \
+    tools.h \
+    point.h
 
 FORMS += resizewidget.ui
 
@@ -32,5 +33,6 @@ SOURCES += main.cpp \
            mainwindow.cpp \   
     statebox.cpp \
     cornergrabber.cpp \
-    Point.cpp \
-    data.cpp
+    data.cpp \
+    tools.cpp \
+    point.cpp

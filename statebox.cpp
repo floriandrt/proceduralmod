@@ -4,11 +4,11 @@
 #include <QPainter>
 #include <QSize>
 #include <QLinearGradient>
-#include <QlineF>
+#include <QLineF>
 #include <QDebug>
 #include <QMessageBox>
 #include <QProgressDialog>
-#include "Point.h"
+#include "point.h"
 #include <stdio.h>
 #include "cair/CAIR_CML.h"
 #include "cair/CAIR.h"
