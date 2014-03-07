@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include "cair/CAIR_CML.h"
 #include "cair/CAIR.h"
-
+#include "tools.h"
 #include "math.h"
 
 using namespace std;
@@ -64,10 +64,11 @@ StateBox::StateBox(ImageScene *_scene):
         _drawingOrigenY(10),
         _mainScene(_scene)
 {
+    cerr << "ENTREE INIT STATEBOX" << endl;
     Point p1(4);
     p1[0] = 0;
-    p1[1] = 50;
-    p1[2] = 20;
+    p1[1] = 50.9724;
+    p1[2] = 20.6166;
     p1[3] = 50;
     points.addData(p1);
     Point p2(4);
@@ -88,6 +89,8 @@ StateBox::StateBox(ImageScene *_scene):
     p4[2] = 100;
     p4[3] = 40;
     points.addData(p4);
+    points.setMean(Tools::averageMulDim(points));
+    points.setVar(Tools::varianceMulDim(points,points.getMean()));
     _outterborderPen.setWidth(2);
     _outterborderPen.setColor(_outterborderColor);
 
@@ -104,7 +107,7 @@ StateBox::StateBox(ImageScene *_scene):
     //_text.setParentItem(this);
 
     this->setAcceptHoverEvents(true);
-
+    cerr << "SORTIE INIT STATEBOX" << endl;
 }
 
 void StateBox::loadImage(){
@@ -250,9 +253,10 @@ void StateBox::adjustSize(int x, int y)
         }
       }
       //Call CAIR
+      CAIR_Data(&source, &source_weights, newWidth, newHeight, conv, ener, &dest_weights, &dest, updateCallbackStateBox, points);
 //      if( !_resizeWidget.hdCheckBox->isChecked() )
 //      {
-        CAIR( &source, &source_weights, newWidth, newHeight, conv, ener, &dest_weights, &dest, updateCallbackStateBox );
+//        CAIR( &source, &source_weights, newWidth, newHeight, conv, ener, &dest_weights, &dest, updateCallbackStateBox );
         //      }
 //      else
 //      {
@@ -263,7 +267,10 @@ void StateBox::adjustSize(int x, int y)
       //QImage *newImg = new QImage(CMLtoQImage(dest));
 //      saveInUndoStack();
       delete _img;
-      _img = new QImage(CMLtoQImage(dest));;
+      _img = new QImage(QSize(newWidth,newHeight),QImage::Format_RGB32);
+      _img->fill(0);
+      drawImagefromData(points,_img);
+//      _img = new QImage(CMLtoQImage(dest));
       //_imgItem->setPixmap(QPixmap::fromImage(*_img));
       update();
       //Set the weight mask to the now reduced size version shrunk by CAIR

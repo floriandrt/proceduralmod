@@ -14,9 +14,13 @@ class Point{
         ~Point();
         int getSize() const;
         friend std::ostream& operator<<( std::ostream &flux, Point const& p );
-        double& operator[](int i);
-        Point& operator=(Point const& p);
-        Point& operator+=(Point const& p);
+        double& operator [](int i);
+        Point& operator =(Point const& p);
+        Point& operator +=(Point const& p);
+        Point& operator /=(Point const& p);
+        Point& operator *=(Point const& p);
+        bool operator <(Point const& p);
+        bool operator >(Point const& p);
 };
 
 #endif // POINT_H

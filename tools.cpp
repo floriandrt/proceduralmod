@@ -107,7 +107,7 @@ double* Tools::variance(double **data, double mean[], int dim, int size){
     return result;
 }
 
-double** Tools::varianceMulDim(Data& d, Point& mean){
+double** Tools::varianceMulDim(Data& d, Point mean){
     int dim = mean.getSize();
     double** res = new double*[dim];
     for(int i = 0; i<dim; i++){
@@ -139,9 +139,9 @@ double** Tools::varianceMulDim(Data& d, Point& mean){
 // 	return result;
 // }
 
-double det(Point* a){
-    return a[0][0]*a[1][1]-(a[0][1]*a[1][0]);
-}
+//double det(Point* a){
+//    return a[0][0]*a[1][1]-(a[0][1]*a[1][0]);
+//}
 
 //a doit être de taille 2
 // Point* inv2D(Point* a){
@@ -183,6 +183,13 @@ Point Tools::generateMulDim(Point mean, double **variance){
     }
     y = mult(A,x);
     y += mean;
+    return y;
+}
+
+Point Tools::generateY(Point mean, double** variance, double x1, double x2){
+    Point y = generateMulDim(mean, variance);
+    y[0] = x1;
+    y[2] = x2;
     return y;
 }
 

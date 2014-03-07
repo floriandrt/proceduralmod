@@ -1,188 +1,4 @@
 
-//=========================================================================================================//
-//CAIR - Content Aware Image Resizer
-//Copyright (C) 2009 Joseph Auman (brain.recall@gmail.com)
-
-//=========================================================================================================//
-//This library is free software; you can redistribute it and/or
-//modify it under the terms of the GNU Lesser General Public
-//License as published by the Free Software Foundation; either
-//version 2.1 of the License, or (at your option) any later version.
-//This library is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//Lesser General Public License for more details.
-//You should have received a copy of the GNU Lesser General Public
-//License along with this library; if not, write to the Free Software
-//Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-
-//=========================================================================================================//
-//This thing should hopefully perform the image resize method developed by Shai Avidan and Ariel Shamir.
-
-//=========================================================================================================//
-//TODO (maybe):
-//  - Try doing Poisson image reconstruction instead of the averaging technique in CAIR_HD() if I can figure it out (see the ReadMe).
-//  - Abstract out pthreads into macros allowing for multiple thread types to be used (ugh, not for a while at least)
-//  - Maybe someday push CAIR into OO land and create a class out of it (pff, OO is the devil!).
-
-//=========================================================================================================//
-//KNOWN BUGS:
-//  - The threading changes in v2.16 lost the reentrant capability of CAIR. (If this hits someone hard, let me know.)
-//  - The percent of completion for the CAIR_callback in CAIR_HD and CAIR_Removal is often wrong.
-
-//=========================================================================================================//
-//CHANGELOG:
-//CAIR v2.19 Changelog:
-//  - Single-threaded Energy_Map(), which surprisingly gave a 35% speed boost. My attempts at multithreading this function became a bottleneck.
-//    If anyone has any idea on how to successfully multithread this algorithm, please let me know.
-//CAIR v2.18 Changelog:
-//  - Overhauled my internal matrix handling for a 30% speed boost.
-//  - Complete overhaul of seam enlarging. CAIR now enlarges by the method intended in the paper. (Removed seams determine the added seams. See CAIR_Add())
-//    Because of this, the add_weight parameter is no longer needed.
-//  - Found and fixed a few boundary issues with the edge updates.
-//  - Fixed the non-standard void pointer usage with the thread IDs. (Special thanks to Peter Berrington)
-//  - Deprecated the Image Map functions until I can make something that doesn't suck.
-//CAIR v2.17 Changelog:
-//  - Ditched vectors for dynamic arrays, for about a 15% performance boost.
-//  - Added some headers into CAIR_CML.h to fix some compiler errors with new versions of g++. (Special thanks to Alexandre Prokoudine)
-//  - Added CAIR_Threads(), which allows the ability to dynamically change the number of threads CAIR will use.
-//    NOTE: Don't ever call CAIR_Threads() while CAIR() is processing an image, unless you're a masochist.
-//  - Added CAIR_callback parameters to CAIR(), CAIR_Removal(), and CAIR_HD(). This function pointer will be called every cycle,
-//    passing the function the percent complete (0 to 1). If the function returns false, then the resize is canceled.
-//    Then, CAIR(), CAIR_Removal(), and CAIR_HD() would also return a false, leaving the destination image/weights in an unknown state.
-//    Set to NULL if this does not need to be used.
-//CAIR v2.16 Changelog:
-//  - A long overdue overhaul of the threading system yielded about a 40% performance boost. All threads, semaphores, and mutexes are kept around for
-//    as long as possible, instead of destroying them every step.
-//  - I stumbled across a bug in CAIR_Add() where some parts of the artificial weight matrix weren't being updated, creating slightly incorrect images.
-//  - Comment overhauls to reflect the new threading.
-//CAIR v2.15.1 Changelog:
-//  - Mutexes and conditions used in Energy_Map() are now properly destroyed, fixing a serious memory leak. This was discovered when
-//    processing huge images (7500x3800) that would cause the process to exceed the 32-bit address space.
-//    Special thanks to Klaus Nordby for hitting this bug. CAIR has now been tested up to 9800x7800 without issue.
-//  - A potential memory leak in Deallocate_Matrix() in the CML was squashed.
-//  - By default CAIR now uses 4 threads (yay quad-core!).
-//CAIR v2.15 Changelog:
-//  - Added the new forward energy algorithm. A new CAIR_energy parameter determines the type of energy function to use. Forward energy
-//    produces less artifacts in most images, but comes at a 5% performance cost. Thanks to Matt Newel for pointing it out.
-//    Read the paper on it here: http://www.faculty.idc.ac.il/arik/papers/vidRet.pdf
-//  - The number of threads CAIR uses can now be set by CAIR_NUM_THREADS. This currently does not apply to the Energy calculations.
-//    On my dual-core system, I netted a 5% performance boost by reducing thread count from 4 to 2.
-//  - Separate destination weights for the resize to standardize the interface.
-//  - Removed "namespace std" from source headers. Special thanks to David Oster.
-//  - Removed the clipping Get() method from the CML. This makes the CML generic again.
-//  - Comment clean-ups.
-//  - Comments have been spell-checked. Apparently, I don’t speel so good. (thanks again to David Oster)
-//CAIR v2.14 Changelog:
-//  - CAIR has been relicensed under the LGPLv2.1
-//CAIR v2.13 Changelog:
-//  - Added CAIR_Image_Map() and CAIR_Map_Resize() to allow for "content-aware multi-size images." Now it just needs to get put into a
-//    file-format.
-//  - CAIR() and CAIR_HD() now properly copy the Source to Dest when no resize is done.
-//  - Fixed a bug in CAIR_HD(), Energy/TEnergy confusion.
-//  - Fixed a compiler warning in main().
-//  - Changed in Remove_Quadrant() "pixel remove" into "int remove"
-//  - Comment updates and I decided to bring back the tabs (not sure why I got rid of them).
-//CAIR v2.12 Changelog:
-//  - About 20% faster across the board.
-//  - Unchanged portions of the energy map are now retained. Special thanks to Jib for that (remind me to ask him how it works :-) ).
-//  - Add_Edge() and Remove_Edge() now update the Edge in UNSAFE mode when able.
-//  - The CML now has a CML_DEBUG mode to let the developers know when they screwed up.
-//  - main() now displays the runtime with three decimal places for better accuracy. Special thanks to Jib.
-//  - Various comment updates.
-//CAIR v2.11 Changelog: (The Super-Speedy Jib version)
-//  - 40% speed boost across the board with "high quality"
-//  - Remove_Path() and Add_Path() directly recalculate only changed edge values. This gives the speed of low quality while
-//      maintaining high quality output. Because of this, the quality factor is no longer used and has been removed. (Special thanks to Jib)
-//  - Grayscale values during a resize are now properly recalculated for better accuracy.
-//  - main() has undergone a major overhaul. Now most operations are accessible from the CLI. (Special thanks to Jib)
-//  - Now uses multiple edge detectors, with V_SQUARE offering some of the best quality. (Special thanks to Jib)
-//  - Minor change to Grayscale_Pixel() to increase speed. (Special thanks to Jib)
-//CAIR v2.10 Changelog: (The great title of v3.0 is when I have CAIR_HD() using Poisson reconstruction, a ways away...)
-//  - Removed multiple levels of derefrencing in all the thread functions for a 15% speed boost across the board.
-//  - Changed the way CAIR_Removal() works for more flexibility and better operation.
-//  - Fixed a bug in CAIR_Removal(): infinite loop problem that got eliminated with its new operation
-//  - Some comment updates.
-//CAIR v2.9 Changelog:
-//  - Row-majorized and multi-threaded Add_Weights(), which gave a 40% speed boost while enlarging.
-//  - Row-majorized Edge_Detect() (among many other functions) which gave about a 10% speed boost with quality == 1.
-//  - Changed CML_Matrix::Resize_Width() so it gracefully handles enlarging beyond the Reserve()'ed max.
-//  - Changed Energy_Path() to return a long instead of int, just in case.
-//  - Fixed an enlarging bug in CAIR_Add() created in v2.8.5
-//CAIR v2.8.5 Changelog:
-//  - Added CAIR_HD() which, at each step, determines if the vertical path or the horizontal path has the least energy and then removes it.
-//  - Changed Energy_Path() so it returns the total energy of the minimum path.
-//  - Cleaned up unnecessary allocation of some CML objects.
-//  - Fixed a bug in CML_Matrix:Shift_Row(): bounds checking could cause a shift when one wasn't desired
-//  - Fixed a bug in Remove_Quadrant(): horrible bounds checking
-//CAIR v2.8 Changelog:
-//  - Now 30% faster across the board.
-//  - Added CML_Matrix::Shift_Row() which uses memmove() to shift elements in a row of the matrix. Special thanks again to Brett Taylor
-//      for helping me debug it.
-//  - Add_Quadrant() and Remove_Quadrant() now use the CML_Matrix::Shift_Row() method instead of the old loops. They also specifically
-//      handle their own bounds checking for assignments.
-//  - Removed all bounds checking in CML_Matrix::operator() for a speed boost.
-//  - Cleaned up some CML functions to directly use the private data instead of the class methods.
-//  - CML_Matrix::operator=() now uses memcpy() for a speed boost, especially on those larger images.
-//  - Fixed a bug in CAIR_Grayscale(), CAIR_Edge(), and the CAIR_V/H_Energy() functions: forgot to clear the alpha channel.
-//  - De-tabbed a few more functions
-//CAIR v2.7 Changelog:
-//  - CML has gone row-major, which made the CPU cache nice and happy. Another 25% speed boost. Unfortunately, all the crazy resizing issues
-//      from v2.5 came right back, so be careful when using CML_Matrix::Resize_Width() (enlarging requires a Reserve()).
-//CAIR v2.6.2 Changelog:
-//  - Made a ReadMe.txt and Makefile for the package
-//  - De-tabbed the source files
-//  - Comment updates
-//  - Forgot a left-over Temp object in CAIR_Add()
-//CAIR v2.6.1 Changelog:
-//  - Fixed a memory leak in CML_Matrix::Resize_Width()
-//CAIR v2.6 Changelog:
-//  - Eliminated the copying into a temp matrix in CAIR_Remove() and CAIR_Add(). Another 15% speed boost.
-//  - Fixed the CML resizing so its more logical. No more need for Reserve'ing memory.
-//CAIR v2.5 Changelog:
-//  - Now 35% faster across the board.
-//  - CML has undergone a major rewrite. It no longer uses vectors as its internal storage. Because of this, its resizing functions
-//      have severe limitations, so please read the CML comments if you plan to use them. This gave about a 30% performance boost.
-//  - Optimized Energy_Map(). Now uses two specialized threading functions. About a 5% boost.
-//  - Optimized Remove_Path() to give another boost.
-//  - Energy is no longer created and destroyed in Energy_Path(). Gave another boost.
-//  - Added CAIR_H_Energy(), which gives the horizontal energy of an image.
-//  - Added CAIR_Removal(), which performs (experimental) automatic object removal. It counts the number of negative weight rows/columns,
-//      then removes the least amount in that direction. It'll check to make sure it got rid of all negative areas, then it will expand
-//      the result back out to its original dimensions.
-//CAIR v2.1 Changelog:
-//  - Unrolled the loops for Convolve_Pixel() and changed the way Edge_Detect() works. Optimizing that gave ANOTHER 25% performance boost
-//      with quality == 1.
-//  - inline'ed and const'ed a few accessor functions in the CML for a minor speed boost.
-//  - Fixed a few cross-compiler issues; special thanks to Gabe Rudy.
-//  - Fixed a few more comments.
-//  - Forgot to mention, removal of all previous CAIR_DEBUG code. Most of it is in the new CAIR_Edge() and CAIR_Energy() anyways...
-//CAIR v2.0 Changelog:
-//  - Now 50% faster across the board.
-//  - EasyBMP has been replaced with CML, the CAIR Matrix Library. This gave speed improvements and code standardization.
-//      This is such a large change it has affected all functions in CAIR, all for the better. Reference objects have been
-//      replaced with standard pointers.
-//  - Added three new functions: CAIR_Grayscale(), CAIR_Edge(), and CAIR_Energy(), which give the grayscale, edge detection,
-//      and energy maps of a source image.
-//  - Add_Path() and Remove_Path() now maintain Grayscale during resizing. This gave a performance boost with no real 
-//      quality reduction; special thanks to Brett Taylor.
-//  - Edge_Detect() now handles the boundaries separately for a performance boost.
-//  - Add_Path() and Remove_Path() no longer refill unchanged portions of an image since CML Resize's are no longer destructive.
-//  - CAIR_Add() now Reserve's memory for the vectors in CML to prevent memory thrashing as they are enlarged.
-//  - Fixed another adding bug; new paths have their own artificial weight
-//CAIR v1.2 Changelog:
-//  - Fixed ANOTHER adding bug; now works much better with < 1 quality
-//  - a few more comment updates
-//CAIR v1.1 Changelog:
-//  - Fixed a bad bug in adding; averaging the wrong pixels
-//  - Fixed a few incorrect/outdated comments
-//CAIR v1.0 Changelog:
-//  - Path adding now working with reasonable results; special thanks to Ramin Sabet
-//  - Add_Path() has been multi-threaded
-//CAIR v0.5 Changelog:
-//  - Multi-threaded Energy_Map() and Remove_Path(), gave another 30% speed boost with quality = 0
-//  - Fixed a few compiler warnings when at level 4 (just stuff in the CAIR_DEBUG code)
-//=========================================================================================================//
 
 #include "CAIR.h"
 #include "CAIR_CML.h"
@@ -190,6 +6,7 @@
 #include <limits> //for max int
 #include <pthread.h>
 #include <semaphore.h>
+#include "../tools.h"
 
 using namespace std;
 
@@ -894,15 +711,17 @@ bool CAIR_Add( CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_
 
 	//enlarge the image now that we have our seam data
 	Add_Path(&Resize_img, Source, Source_ptr, goal_x);
-
 	return true;
 } //end CAIR_Add()
 
-bool addData(CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_convolution conv, CAIR_energy ener, bool (*CAIR_callback)(float), int total_seams, int seams_done){
+
+bool addData(CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_convolution conv, CAIR_energy ener, bool (*CAIR_callback)(float), int total_seams, int seams_done, Data& points){
+    cerr << "ENTREE ADD DATA" << endl;
     //create local copies of the actual source image and its set of pointers
     //we will resize this image down the number of adds in order to determine which pixels were removed
     CML_image Resize_img((*Source_ptr).Width(),(*Source_ptr).Height());
     CML_image_ptr Resize_img_ptr((*Source_ptr).Width(),(*Source_ptr).Height());
+    cerr << "ENTREE FOR" << endl;
     for(int y = 0; y < (*Source_ptr).Height(); y++)
     {
         for(int x = 0; x < (*Source_ptr).Width(); x++)
@@ -914,53 +733,37 @@ bool addData(CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_co
         }
     }
 
-    //remove all the least energy seams, setting the "removed" flag for each element
-//    if(CAIR_Remove(&Resize_img_ptr, (*Source_ptr).Width() - (goal_x - (*Source_ptr).Width()), conv, ener, CAIR_callback, total_seams, seams_done) == false)
-//    {
-//        return false;
-//    }
-
-    //bool CAIR_Remove( CML_image_ptr * Source, int goal_x, CAIR_convolution conv, CAIR_energy ener, bool (*CAIR_callback)(float), int total_seams, int seams_done )
-    int removes = Resize_img_ptr.Width() - ((*Source_ptr).Width() - (goal_x - (*Source_ptr).Width()));
     int * Min_Path = new int[Resize_img_ptr.Height()];
-
+    cerr << "ENTREE GRAY" << endl;
     //setup the images
     Grayscale_Image( &Resize_img_ptr);
+    cerr << "ENTREE EDGE" << endl;
     Edge_Detect( &Resize_img_ptr, conv );
 
-    //remove each seam
-    for( int i = 0; i < removes; i++ )
-    {
-        //If you're going to maintain some sort of progress counter/bar, here's where you would do it!
-        if( (CAIR_callback != NULL) && (CAIR_callback( (float)(i+seams_done)/total_seams ) == false) )
-        {
-            delete[] Min_Path;
-            return false;
-        }
+    //If you're going to maintain some sort of progress counter/bar, here's where you would do it!
+//    if( (CAIR_callback != NULL) && (CAIR_callback( (float)(i+seams_done)/total_seams ) == false) )
+//    {
+//        delete[] Min_Path;
+//        return false;
+//    }
+    cerr << "ENTREE ENERGY PATH" << endl;
 
-        //determine the least energy path
-        if( i == 0 )
-        {
-            //first time through, build the energy map
-            Energy_Path( &Resize_img_ptr, Min_Path, ener, true );
-        }
-        else
-        {
-            //next time through, only update the energy map from the last remove
-            Energy_Path( &Resize_img_ptr, Min_Path, ener, false );
-        }
-
+    Energy_Path( &Resize_img_ptr, Min_Path, ener, true );
+    cerr << "ENTREE INSERT DATA" << endl;
+    cout << "Min_PATH[0] : " << Min_Path[0] << endl;
+    points.insertData4D(Tools::generateY(points.getMean(),points.getVar(),Min_Path[0],Min_Path[0]+1),Min_Path[0]);
         //remove the seam from the image, update grayscale and edge values
-        Remove_Path( &Resize_img_ptr, Min_Path, conv );
-    }
+//        Remove_Path( &Resize_img_ptr, Min_Path, conv );
 
     delete[] Min_Path;
 
     //enlarge the image now that we have our seam data
+//    Add_Path(&Resize_img, Source, Source_ptr, goal_x);
     Add_Path(&Resize_img, Source, Source_ptr, goal_x);
-
+    cerr << "SORTIE ADD DATA" << endl;
     return true;
 }
+
 
 //=========================================================================================================//
 //==                                             R E M O V E                                             ==//
@@ -1296,6 +1099,38 @@ void CAIR_Threads( int thread_count )
 	{
 		num_threads = thread_count;
 	}
+}
+
+void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, int goal_y, CAIR_convolution conv, CAIR_energy ener, CML_int * D_Weights, CML_color * Dest, bool (*CAIR_callback)(float), Data& points){
+    cerr << "ENTREE CAIR DATA" << endl;
+    int delta = goal_x - (*Source).Width();
+    if(points.getRecentInsert()){
+        int pos = points.getPosInsert();
+        points[pos][2] += delta;
+        for(int i = pos+1; i<points.getDataSize(); i++){
+            points[i][0] += delta;
+            points[i][2] += delta;
+        }
+        return;
+    }
+    if(delta == 2){
+        int total_seams = abs((*Source).Width()-goal_x) + abs((*Source).Height()-goal_y);
+        int seams_done = 0;
+
+        //create threads for the run
+        Startup_Threads();
+
+        //build the image for internal use
+        CML_image Image(1,1);
+        CML_image_ptr Image_Ptr(1,1);
+        Init_CML_Image(Source, S_Weights, &Image, &Image_Ptr);
+        addData(&Image, &Image_Ptr, goal_x, conv, ener, CAIR_callback, total_seams, seams_done, points);
+        //shutdown threads, remove semaphores and mutexes
+        Shutdown_Threads();
+        return;
+    }
+    CAIR( Source, S_Weights, goal_x, goal_y, conv, ener, D_Weights, Dest, CAIR_callback );
+    cerr << "SORTIE CAIR DATA" << endl;
 }
 
 //=========================================================================================================//

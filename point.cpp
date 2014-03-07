@@ -45,6 +45,11 @@ double& Point::operator[](int i){
 }
 
 Point& Point::operator=(Point const& p){
+    if(n == 0){
+        delete[] data;
+        data = new double[p.n];
+        n = p.n;
+    }
     if(p.n != n){
         cerr << "Points are not the same size" << endl;
     }
@@ -65,3 +70,46 @@ Point& Point::operator+=(Point const& p){
     return *this;
 }
 
+Point& Point::operator/=(Point const& p){
+    if(p.n != n){
+        cerr << "Points are not the same size" << endl;
+    }
+    for(int i = 0; i<n; i++){
+        data[i] /= p.data[i];
+    }
+    return *this;
+}
+
+Point& Point::operator*=(Point const& p){
+    if(p.n != n){
+        cerr << "Points are not the same size" << endl;
+    }
+    for(int i = 0; i<n; i++){
+        data[i] *= p.data[i];
+    }
+    return *this;
+}
+
+bool Point::operator<(Point const& p){
+    if(p.n != n){
+        cerr << "Points are not the same size" << endl;
+    }
+    for(int i = 0; i<n; i++){
+        if(data[i] >= p.data[i] ){
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Point::operator>(Point const& p){
+    if(p.n != n){
+        cerr << "Points are not the same size" << endl;
+    }
+    for(int i = 0; i<n; i++){
+        if(data[i] <= p.data[i] ){
+            return false;
+        }
+    }
+    return true;
+}
