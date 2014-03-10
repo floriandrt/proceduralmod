@@ -67,13 +67,13 @@ StateBox::StateBox(ImageScene *_scene):
     cerr << "ENTREE INIT STATEBOX" << endl;
     Point p1(4);
     p1[0] = 0;
-    p1[1] = 50.9724;
-    p1[2] = 20.6166;
-    p1[3] = 50;
+    p1[1] = 50;
+    p1[2] = 20;
+    p1[3] = 90;
     points.addData(p1);
     Point p2(4);
     p2[0] = 20;
-    p2[1] = 50;
+    p2[1] = 90;
     p2[2] = 40;
     p2[3] = 20;
     points.addData(p2);
@@ -91,6 +91,15 @@ StateBox::StateBox(ImageScene *_scene):
     points.addData(p4);
     points.setMean(Tools::averageMulDim(points));
     points.setVar(Tools::varianceMulDim(points,points.getMean()));
+//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
+//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
+//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
+//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
+//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
+//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
+//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
+//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
+
     _outterborderPen.setWidth(2);
     _outterborderPen.setColor(_outterborderColor);
 

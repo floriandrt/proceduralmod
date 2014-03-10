@@ -17,6 +17,9 @@ class Point{
         double& operator [](int i);
         Point& operator =(Point const& p);
         Point& operator +=(Point const& p);
+        Point& operator +=(int val);
+        Point& operator -=(Point const& p);
+        Point& operator -=(int val);
         Point& operator /=(Point const& p);
         Point& operator *=(Point const& p);
         bool operator <(Point const& p);

@@ -168,7 +168,8 @@ double Tools::gaussian(double x, double mean, double variance){
 // }
 
 double Tools::generateGaussian(double mean, double variance){
-    return gaussian((double)rand()/RAND_MAX, mean, variance);
+    double temp = sqrt(-2*log((double)rand()/RAND_MAX))*cos(2*M_PI*(double)rand()/RAND_MAX);
+    return temp*variance+mean;
 }
 
 Point Tools::generateMulDim(Point mean, double **variance){
@@ -193,10 +194,22 @@ Point Tools::generateY(Point mean, double** variance, double x1, double x2){
     return y;
 }
 
-Point Tools::rejet(Point min, Point max, Point mean, double** variance){
+Point Tools::rejet(Point min, Point max, Point mean, double** variance, int limit){
     Point test = generateMulDim(mean, variance);
-    while(test < min || test > max){
-        test = generateMulDim(mean,variance);
+    for(int i = 0; i<limit; i++){
+        if(test > min && test < max){
+            return test;
+        }
     }
-    return test;
+    return Point();
+}
+
+bool Tools::isGaussian(Point x, Point mean, double** var){
+    Point min(x);
+    Point max(x);
+    min -= 30;
+    max += 30;
+    Point res = rejet(min, max, mean, var, 100000);
+
+    return !(res.getSize() == 0);
 }

@@ -24,6 +24,7 @@ class Data{
         double** getVar();
         void setMean(Point m);
         void setVar(double** v);
+        void setRecentInsert(bool b);
         bool getRecentInsert();
         int getPosInsert();
         // Point getData(int i, int j) const;

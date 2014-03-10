@@ -70,6 +70,30 @@ Point& Point::operator+=(Point const& p){
     return *this;
 }
 
+Point& Point::operator+=(int val){
+    for(int i = 0; i<n; i++){
+        data[i] += val;
+    }
+    return *this;
+}
+
+Point& Point::operator-=(Point const& p){
+    if(p.n != n){
+        cerr << "Points are not the same size" << endl;
+    }
+    for(int i = 0; i<n; i++){
+        data[i] -= p.data[i];
+    }
+    return *this;
+}
+
+Point& Point::operator-=(int val){
+    for(int i = 0; i<n; i++){
+        data[i] -= val;
+    }
+    return *this;
+}
+
 Point& Point::operator/=(Point const& p){
     if(p.n != n){
         cerr << "Points are not the same size" << endl;

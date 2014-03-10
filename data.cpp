@@ -25,27 +25,32 @@ Data::Data(const Data& d){
 }
 
 void Data::addData(Point newData){
-    cerr << "ENTREE ADD DATA" << endl;
+//    cerr << "ENTREE ADD DATA" << endl;
     data.push_back(newData);
     dataSize++;
-    cerr << "SORTIE ADD DATA" << endl;
+//    cerr << "SORTIE ADD DATA" << endl;
 }
 
 //marche seulement dans le cas de coordonnées de points comme daa
 void Data::insertData4D(Point newData, double pos){
-    cout << "ENTREE INSERT DATA 4D" << endl;
+//    cout << "ENTREE INSERT DATA 4D" << endl;
     int i = 0;
+    int delta = newData[2] - newData[0] + 1;
     for (std::vector<Point>::iterator it = data.begin() ; it != data.end(); ++it){
-        if(pos >= data[i][0] && pos < data[i][1]){
+        if(pos >= data[i][0] && pos < data[i][2]){
+            for(int j = pos+1; j<dataSize; j++){
+                data[j][0] += delta;
+                data[j][2] += delta;
+            }
             data[i][2] = newData[0];
             data[i][3] = newData[1];
             data[i+1][0] = newData[2];
             data[i+1][1] = newData[3];
             data.insert(++it,newData);
             dataSize++;
-            cout << *this << endl;
-            cout << "i : " << i << endl;
-            cout << "SORTIE AVEC INSERT DATA 4D" << endl;
+//            cout << *this << endl;
+//            cout << "i : " << i << endl;
+//            cout << "SORTIE AVEC INSERT DATA 4D" << endl;
             recentInsert = true;
             posInsert = i+1;
             return;
@@ -53,7 +58,7 @@ void Data::insertData4D(Point newData, double pos){
         i++;
     }
 
-    cout << "SORTIE SANS INSERT DATA 4D" << endl;
+//    cout << "SORTIE SANS INSERT DATA 4D" << endl;
 }
 
 int Data::getDataSize() const{
@@ -69,13 +74,17 @@ double** Data::getVar(){
 }
 
 void Data::setMean(Point m){
-    cerr << "ENTREE SET MEAN" << endl;
+//    cerr << "ENTREE SET MEAN" << endl;
     mean = m;
-    cerr << "SORTIE SET MEAN" << endl;
+//    cerr << "SORTIE SET MEAN" << endl;
 }
 
 void Data::setVar(double **v){
     var = v;
+}
+
+void Data::setRecentInsert(bool b){
+    recentInsert = b;
 }
 
 bool Data::getRecentInsert(){

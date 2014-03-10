@@ -19,7 +19,8 @@ class Tools{
         static double generateGaussian(double mean, double variance);
         static Point generateMulDim(Point mean, double **variance);
         static Point generateY(Point mean, double** variance, double x1, double x2);
-        static Point rejet(Point min, Point max, Point mean, double** variance);
+        static Point rejet(Point min, Point max, Point mean, double** variance, int limit);
+        static bool isGaussian(Point x, Point mean, double** var);
 };
 
 #endif //TOOLS_H

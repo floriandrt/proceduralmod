@@ -716,7 +716,9 @@ bool CAIR_Add( CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_
 
 
 bool addData(CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_convolution conv, CAIR_energy ener, bool (*CAIR_callback)(float), int total_seams, int seams_done, Data& points){
-    cerr << "ENTREE ADD DATA" << endl;
+//    cerr << "ENTREE ADD DATA" << endl;
+    int delta = goal_x - (*Source_ptr).Width();
+//    cout << "delta : " << delta << endl;
     //create local copies of the actual source image and its set of pointers
     //we will resize this image down the number of adds in order to determine which pixels were removed
     CML_image Resize_img((*Source_ptr).Width(),(*Source_ptr).Height());
@@ -734,10 +736,10 @@ bool addData(CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_co
     }
 
     int * Min_Path = new int[Resize_img_ptr.Height()];
-    cerr << "ENTREE GRAY" << endl;
+//    cerr << "ENTREE GRAY" << endl;
     //setup the images
     Grayscale_Image( &Resize_img_ptr);
-    cerr << "ENTREE EDGE" << endl;
+//    cerr << "ENTREE EDGE" << endl;
     Edge_Detect( &Resize_img_ptr, conv );
 
     //If you're going to maintain some sort of progress counter/bar, here's where you would do it!
@@ -746,12 +748,12 @@ bool addData(CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_co
 //        delete[] Min_Path;
 //        return false;
 //    }
-    cerr << "ENTREE ENERGY PATH" << endl;
+//    cerr << "ENTREE ENERGY PATH" << endl;
 
     Energy_Path( &Resize_img_ptr, Min_Path, ener, true );
-    cerr << "ENTREE INSERT DATA" << endl;
-    cout << "Min_PATH[0] : " << Min_Path[0] << endl;
-    points.insertData4D(Tools::generateY(points.getMean(),points.getVar(),Min_Path[0],Min_Path[0]+1),Min_Path[0]);
+//    cerr << "ENTREE INSERT DATA" << endl;
+//    cout << "Min_PATH[0] : " << Min_Path[0] << endl;
+    points.insertData4D(Tools::generateY(points.getMean(),points.getVar(),Min_Path[0],Min_Path[0]+delta-1),Min_Path[0]);
         //remove the seam from the image, update grayscale and edge values
 //        Remove_Path( &Resize_img_ptr, Min_Path, conv );
 
@@ -759,8 +761,8 @@ bool addData(CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_co
 
     //enlarge the image now that we have our seam data
 //    Add_Path(&Resize_img, Source, Source_ptr, goal_x);
-    Add_Path(&Resize_img, Source, Source_ptr, goal_x);
-    cerr << "SORTIE ADD DATA" << endl;
+//    Add_Path(&Resize_img, Source, Source_ptr, goal_x);
+//    cerr << "SORTIE ADD DATA" << endl;
     return true;
 }
 
@@ -1111,9 +1113,13 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, int goal_y, 
             points[i][0] += delta;
             points[i][2] += delta;
         }
+        cout << Tools::isGaussian(points[pos],points.getMean(),points.getVar()) << endl;
+        if(Tools::isGaussian(points[pos],points.getMean(),points.getVar())){
+            points.setRecentInsert(false);
+        }
         return;
     }
-    if(delta == 2){
+    if(delta > 0){
         int total_seams = abs((*Source).Width()-goal_x) + abs((*Source).Height()-goal_y);
         int seams_done = 0;
 
