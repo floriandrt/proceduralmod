@@ -45,11 +45,7 @@ class StateBox : public QGraphicsItem
 {
 public:
     StateBox(ImageScene *_scene);
-    QGraphicsTextItem _text;    ///< sample text to go in the title area.
-    QImage *_img;
-    QGraphicsPixmapItem *_imgItem;
     void setGridSpace(int space);
-    void loadImage();
 
     private:
 
@@ -72,6 +68,7 @@ public:
     void adjustSize(int x, int y);
 
 
+    QImage *_img;
     QColor _outterborderColor; ///< the hover event handlers will toggle this between red and black
     QPen _outterborderPen; ///< the pen is used to paint the red/black border
     QPointF _location;

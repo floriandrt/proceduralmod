@@ -16,6 +16,10 @@ class Point{
         friend std::ostream& operator<<( std::ostream &flux, Point const& p );
         double& operator [](int i);
         Point& operator =(Point const& p);
+        Point operator+(Point const& p);
+        Point operator+(int val);
+        Point operator-(Point const& p);
+        Point operator-(int val);
         Point& operator +=(Point const& p);
         Point& operator +=(int val);
         Point& operator -=(Point const& p);

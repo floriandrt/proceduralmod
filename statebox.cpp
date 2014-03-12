@@ -47,19 +47,14 @@ void drawImagefromData(Data d, QImage* _img){
 }
 
 StateBox::StateBox(ImageScene *_scene):
-        _text(),
         _outterborderColor(Qt::black),
         _outterborderPen(),
         _location(0,0),
-        //_width(200),
-        //_height(200),
         _dragStart(0,0),
         _gridSpace(10),
         _cornerDragStart(0,0),
         _XcornerGrabBuffer(0),
         _YcornerGrabBuffer(0),
-        //_drawingWidth(  _width -   _XcornerGrabBuffer),
-        //_drawingHeight( _height -  _YcornerGrabBuffer),
         _drawingOrigenX(10),
         _drawingOrigenY(10),
         _mainScene(_scene)
@@ -87,55 +82,52 @@ StateBox::StateBox(ImageScene *_scene):
     p4[0] = 60;
     p4[1] = 60;
     p4[2] = 100;
-    p4[3] = 40;
+    p4[3] = 60;
     points.addData(p4);
+//    Point p1(4);
+//    p1[0] = 0;
+//    p1[1] = 50;
+//    p1[2] = 20;
+//    p1[3] = 60;
+//    points.addData(p1);
+//    Point p2(4);
+//    p2[0] = 20;
+//    p2[1] = 60;
+//    p2[2] = 40;
+//    p2[3] = 55;
+//    points.addData(p2);
+//    Point p3(4);
+//    p3[0] = 40;
+//    p3[1] = 55;
+//    p3[2] = 60;
+//    p3[3] = 45;
+//    points.addData(p3);
+//    Point p4(4);
+//    p4[0] = 60;
+//    p4[1] = 45;
+//    p4[2] = 100;
+//    p4[3] = 50;
+//    points.addData(p4);
     points.setMean(Tools::averageMulDim(points));
     points.setVar(Tools::varianceMulDim(points,points.getMean()));
-//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
-//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
-//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
-//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
-//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
-//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
-//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
-//    points.addData(Tools::generateMulDim(points.getMean(),points.getVar()));
+    for(int i = 0; i<10000; i++){
+        points.addSample(Tools::generateMulDim(points.getMean(),points.getVar()));
+    }
 
     _outterborderPen.setWidth(2);
     _outterborderPen.setColor(_outterborderColor);
 
-    QString fileName("C:/Users/ofurofuro/Desktop/test3.jpeg");
-    _img = new QImage(QSize(100,100),QImage::Format_RGB32/*fileName*/);
+    _img = new QImage(QSize(100,100),QImage::Format_RGB32);
     drawImagefromData(points,_img);
+
     _width = _img->width()+32;
     _height = _img->height()+32;
+
     _drawingWidth = _width -16 -   _XcornerGrabBuffer;
     _drawingHeight = _height -16 -   _XcornerGrabBuffer;
-    //update();
-    //_text.setPos(35,35);
-    //_text.setPlainText("text goes here");
-    //_text.setParentItem(this);
 
     this->setAcceptHoverEvents(true);
     cerr << "SORTIE INIT STATEBOX" << endl;
-}
-
-void StateBox::loadImage(){
-    QString fileName("C:/Users/ofurofuro/Desktop/test2.jpeg");
-    //QString fileName("C:\\Users\\ofurofuro\\Desktop\\test2.png");
-    QImage _img(fileName);
-    _imgItem->setZValue(1);
-
-    //_maskPix = QPixmap(_img.width(), _img.height());
-    //_maskPix.fill(Qt::transparent);
-
-    //_maskItem = _scene->addPixmap(_maskPix);
-    //_maskItem = (stateBox->_scene)->addPixmap(_maskPix);
-    //_maskItem->setZValue(2); //Always in front of imgItem
-
-    //_view->setScene(_scene);
-    //_view->setScene(stateBox->_scene);
-
-    //_scaleFactor = 1.0;
 }
 
 //assumes dest is already set to have the save size as source
@@ -203,7 +195,6 @@ void StateBox::adjustSize(int x, int y)
 
     _drawingWidth += x; // _width - _XcornerGrabBuffer;
     _drawingHeight += y; // _height - _YcornerGrabBuffer;
-//    cairResize(_width, _height);
 
 /************
  * **********

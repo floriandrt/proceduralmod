@@ -5,20 +5,6 @@
 
 using namespace std;
 
-// Point sqrt2D(Point a){
-// 	return Point(sqrt(a[0]), sqrt(a[1]));
-// }
-
-
-// Point* Tools::dotMat2D(Point a, Point b){
-// 	Point *res = new Point[2];
-// 	res[0].setX(a[0]*b[0]);
-// 	res[0].setY(a[0]*b[1]);
-// 	res[1].setX(a[1]*b[0]);
-// 	res[1].setY(a[1]*b[1]);
-// 	return res;
-// }
-
 Point mult(double** const A, Point x){
     Point res(x.getSize());
     for(int i = 0; i<x.getSize(); i++){
@@ -82,18 +68,6 @@ Point Tools::averageMulDim(Data& d){
     return res;
 }
 
-// Point* Tools::average2(Data const& d){
-// 	Point *result = new Point[d.getGroupSize()];
-// 	for(int j = 0; j<d.getGroupSize(); j++){
-// 		result[j] = 0;
-// 		for(int i = 0; i<d.getDataSize(); i++){
-// 			result[j] += d.getData(i,j);
-// 		}
-// 		result[j] /= d.getDataSize();
-// 	}
-// 	return result;
-// }
-
 double* Tools::variance(double **data, double mean[], int dim, int size){
     double *result = new double[dim];
     for(int i = 0; i<dim; i++){
@@ -122,23 +96,6 @@ double** Tools::varianceMulDim(Data& d, Point mean){
     return res;
 }
 
-// Point* Tools::variance2(Data const& d, Point *mean){
-// 	Point *result = new Point[2];
-// 	Point *temp = new Point[2];
-// 	for(int i = 0; i<d.getGroupSize(); i++){
-// 		for(int j = 0; j<d.getDataSize(); j++){
-// 			temp = dotMat2D(d.getData(j,i)-mean[i],d.getData(j,i)-mean[i]);
-// 			result[0] += temp[0];
-// 			result[1] += temp[1];
-// 		}
-// 	}
-// 	result[0] /= d.getDataSize();
-// 	result[1] /= d.getDataSize();
-// 	result[0] = sqrt2D(result[0]);
-// 	result[1] = sqrt2D(result[1]);
-// 	return result;
-// }
-
 //double det(Point* a){
 //    return a[0][0]*a[1][1]-(a[0][1]*a[1][0]);
 //}
@@ -160,12 +117,6 @@ double** Tools::varianceMulDim(Data& d, Point mean){
 double Tools::gaussian(double x, double mean, double variance){
     return (1/(sqrt(2*M_PI)*variance))*exp(-0.5*pow((x-mean)/variance,2));
 }
-
-// Point Tools::gaussian2D(Point x, Point mean, Point* variance){
-// 	Point xB(x-mean);
-// 	Point *invVar = inv2D(variance);
-// 	(1/(2*M_PI*sqrt(det(variance))))*exp(-0.5*(invVar[0][0]*xB[0]*xB[0]+invVar[1][1]*xB[1]*xB[1]+(invVar[0][1]+invVar[1][0])*xB[0]*xB[1]));
-// }
 
 double Tools::generateGaussian(double mean, double variance){
     double temp = sqrt(-2*log((double)rand()/RAND_MAX))*cos(2*M_PI*(double)rand()/RAND_MAX);
@@ -204,12 +155,23 @@ Point Tools::rejet(Point min, Point max, Point mean, double** variance, int limi
     return Point();
 }
 
-bool Tools::isGaussian(Point x, Point mean, double** var){
-    Point min(x);
-    Point max(x);
-    min -= 30;
-    max += 30;
-    Point res = rejet(min, max, mean, var, 100000);
+Point Tools::rejet(Point mean, double** variance, vector<Point> sample){
+    Point test = generateMulDim(mean, variance);
+    for(uint i = 0; i<sample.size(); i++){
+        if(test < (sample[i]+1) && test > (sample[i]-1)){
+            return test;
+        }
+    }
+    return Point();
+}
+
+bool Tools::isGaussian(Point x, Point mean, double** var, vector<Point> sample){
+    Point min(x.getSize());
+    Point max(x.getSize());
+//    min -= 30;
+//    max += 30;
+//    Point res = rejet(min, max, mean, var, 100000);
+    Point res = rejet(mean,var,sample);
 
     return !(res.getSize() == 0);
 }
