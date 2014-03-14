@@ -20,7 +20,8 @@ class Data{
         ~Data();
         void addData(Point newData);
         void eraseData();
-        void insertData4D(Point newData, double pos);
+        int reduceData(int delta, int pos);
+        void insertData4D(Point newData, int pos);
         int getDataSize() const;
         Point getMean();
         double** getVar();

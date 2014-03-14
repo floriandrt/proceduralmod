@@ -714,15 +714,12 @@ bool CAIR_Add( CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_
 	return true;
 } //end CAIR_Add()
 
-bool removeData(CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_convolution conv, CAIR_energy ener, bool (*CAIR_callback)(float), int total_seams, int seams_done, Data& points, double delta){
+int findMinPath(CML_image_ptr * Source_ptr, CAIR_convolution conv, CAIR_energy ener){
 //    cerr << "ENTREE ADD DATA" << endl;
-    int delta = goal_x - (*Source_ptr).Width();
-    cerr << "delta : " << delta << endl;
-    //create local copies of the actual source image and its set of pointers
-    //we will resize this image down the number of adds in order to determine which pixels were removed
+
     CML_image Resize_img((*Source_ptr).Width(),(*Source_ptr).Height());
     CML_image_ptr Resize_img_ptr((*Source_ptr).Width(),(*Source_ptr).Height());
-    cerr << "ENTREE FOR" << endl;
+
     for(int y = 0; y < (*Source_ptr).Height(); y++)
     {
         for(int x = 0; x < (*Source_ptr).Width(); x++)
@@ -735,86 +732,16 @@ bool removeData(CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR
     }
 
     int * Min_Path = new int[Resize_img_ptr.Height()];
-    cerr << "ENTREE GRAY" << endl;
-    //setup the images
     Grayscale_Image( &Resize_img_ptr);
-    cerr << "ENTREE EDGE" << endl;
     Edge_Detect( &Resize_img_ptr, conv );
 
-    //If you're going to maintain some sort of progress counter/bar, here's where you would do it!
-//    if( (CAIR_callback != NULL) && (CAIR_callback( (float)(i+seams_done)/total_seams ) == false) )
-//    {
-//        delete[] Min_Path;
-//        return false;
-//    }
-    cerr << "ENTREE ENERGY PATH" << endl;
-
     Energy_Path( &Resize_img_ptr, Min_Path, ener, true );
-//    cerr << "ENTREE INSERT DATA" << endl;
-//    cout << "Min_PATH[0] : " << Min_Path[0] << endl;
-    for()
-    points.insertData4D(Tools::generateY(points.getMean(),points.getVar(),Min_Path[0],Min_Path[0]+delta-1),Min_Path[0]);
-        //remove the seam from the image, update grayscale and edge values
-//        Remove_Path( &Resize_img_ptr, Min_Path, conv );
 
+    int res = Min_Path[0];
     delete[] Min_Path;
 
-    //enlarge the image now that we have our seam data
-//    Add_Path(&Resize_img, Source, Source_ptr, goal_x);
-//    cerr << "SORTIE ADD DATA" << endl;
-    return true;
+    return res;
 }
-
-bool addData(CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_convolution conv, CAIR_energy ener, bool (*CAIR_callback)(float), int total_seams, int seams_done, Data& points){
-//    cerr << "ENTREE ADD DATA" << endl;
-    int delta = goal_x - (*Source_ptr).Width();
-    cerr << "delta : " << delta << endl;
-    //create local copies of the actual source image and its set of pointers
-    //we will resize this image down the number of adds in order to determine which pixels were removed
-    CML_image Resize_img((*Source_ptr).Width(),(*Source_ptr).Height());
-    CML_image_ptr Resize_img_ptr((*Source_ptr).Width(),(*Source_ptr).Height());
-    cerr << "ENTREE FOR" << endl;
-    for(int y = 0; y < (*Source_ptr).Height(); y++)
-    {
-        for(int x = 0; x < (*Source_ptr).Width(); x++)
-        {
-            Resize_img(x,y).image = (*Source_ptr)(x,y)->image;
-            Resize_img(x,y).weight = (*Source_ptr)(x,y)->weight;
-            Resize_img(x,y).removed = false;
-            Resize_img_ptr(x,y) = &(Resize_img(x,y));
-        }
-    }
-
-    int * Min_Path = new int[Resize_img_ptr.Height()];
-    cerr << "ENTREE GRAY" << endl;
-    //setup the images
-    Grayscale_Image( &Resize_img_ptr);
-    cerr << "ENTREE EDGE" << endl;
-    Edge_Detect( &Resize_img_ptr, conv );
-
-    //If you're going to maintain some sort of progress counter/bar, here's where you would do it!
-//    if( (CAIR_callback != NULL) && (CAIR_callback( (float)(i+seams_done)/total_seams ) == false) )
-//    {
-//        delete[] Min_Path;
-//        return false;
-//    }
-    cerr << "ENTREE ENERGY PATH" << endl;
-
-    Energy_Path( &Resize_img_ptr, Min_Path, ener, true );
-//    cerr << "ENTREE INSERT DATA" << endl;
-//    cout << "Min_PATH[0] : " << Min_Path[0] << endl;
-    points.insertData4D(Tools::generateY(points.getMean(),points.getVar(),Min_Path[0],Min_Path[0]+delta-1),Min_Path[0]);
-        //remove the seam from the image, update grayscale and edge values
-//        Remove_Path( &Resize_img_ptr, Min_Path, conv );
-
-    delete[] Min_Path;
-
-    //enlarge the image now that we have our seam data
-//    Add_Path(&Resize_img, Source, Source_ptr, goal_x);
-//    cerr << "SORTIE ADD DATA" << endl;
-    return true;
-}
-
 
 //=========================================================================================================//
 //==                                             R E M O V E                                             ==//
@@ -1152,61 +1079,55 @@ void CAIR_Threads( int thread_count )
 	}
 }
 
-void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, int goal_y, CAIR_convolution conv, CAIR_energy ener, CML_int * D_Weights, CML_color * Dest, bool (*CAIR_callback)(float), Data& points){
-    cerr << "ENTREE CAIR DATA" << endl;
+void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolution conv, CAIR_energy ener, Data& points){
     int delta = goal_x - (*Source).Width();
     if(points.getRecentInsert()){
         int pos = points.getPosInsert();
         if(delta < 0){
-            double newDelta = points[pos][2] - points[pos][0] - delta;
-            if(newDelta < 0){
+            int ecart = points[pos][2] - points[pos][0];
+            if(delta+ecart <= 0){
                 points.eraseData();
-                points.setRecentInsert(false);
-                int total_seams = abs((*Source).Width()-goal_x) + abs((*Source).Height()-goal_y);
-                int seams_done = 0;
-
-                //create threads for the run
-                Startup_Threads();
-
-                //build the image for internal use
-                CML_image Image(1,1);
-                CML_image_ptr Image_Ptr(1,1);
-                Init_CML_Image(Source, S_Weights, &Image, &Image_Ptr);
-                removeData(&Image, &Image_Ptr, goal_x, conv, ener, CAIR_callback, total_seams, seams_done, points, newDelta);
-            }else if(newDelta == 0){
-                points.eraseData();
+            }else{
+                for(int j = pos+1; j<points.getDataSize(); j++){
+                    points[j][0] += delta;
+                    points[j][2] += delta;
+                }
+                points[pos][2] += delta;
+            }
+        }
+        if(delta > 0){
+            points[pos][2] += delta;
+            for(int i = pos+1; i<points.getDataSize(); i++){
+                points[i][0] += delta;
+                points[i][2] += delta;
+            }
+            if(Tools::isGaussian(points[pos],points.getMean(),points.getVar(),points.getSample())){
                 points.setRecentInsert(false);
             }
         }
-        points[pos][2] += delta;
-        for(int i = pos+1; i<points.getDataSize(); i++){
-            points[i][0] += delta;
-            points[i][2] += delta;
-        }
-        if(delta > 0 && Tools::isGaussian(points[pos],points.getMean(),points.getVar(),points.getSample())){
-            points.setRecentInsert(false);
-        }
 
         return;
     }
+
+    Startup_Threads();
+    CML_image Image(1,1);
+    CML_image_ptr Image_Ptr(1,1);
+    Init_CML_Image(Source, S_Weights, &Image, &Image_Ptr);
+    int min = findMinPath(&Image_Ptr, conv, ener);
+
     if(delta > 0){
-        int total_seams = abs((*Source).Width()-goal_x) + abs((*Source).Height()-goal_y);
-        int seams_done = 0;
-
-        //create threads for the run
-        Startup_Threads();
-
-        //build the image for internal use
-        CML_image Image(1,1);
-        CML_image_ptr Image_Ptr(1,1);
-        Init_CML_Image(Source, S_Weights, &Image, &Image_Ptr);
-        addData(&Image, &Image_Ptr, goal_x, conv, ener, CAIR_callback, total_seams, seams_done, points);
-        //shutdown threads, remove semaphores and mutexes
-        Shutdown_Threads();
-        return;
+        points.insertData4D(Tools::generateY(points.getMean(),points.getVar(),min,min+delta-1),min);
+    }else if(delta < 0){
+        delta = points.reduceData(delta,min);
+        if(delta != 0){
+            points.setRecentInsert(true);
+        }
+        if(delta < 0){
+            cerr << "GROS PROBLEME DELTA ENCORE <0" << endl;
+        }
     }
-    CAIR( Source, S_Weights, goal_x, goal_y, conv, ener, D_Weights, Dest, CAIR_callback );
-    cerr << "SORTIE CAIR DATA" << endl;
+    Shutdown_Threads();
+    return;
 }
 
 //=========================================================================================================//

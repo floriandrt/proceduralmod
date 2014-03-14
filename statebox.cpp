@@ -110,7 +110,7 @@ StateBox::StateBox(ImageScene *_scene):
 //    points.addData(p4);
     points.setMean(Tools::averageMulDim(points));
     points.setVar(Tools::varianceMulDim(points,points.getMean()));
-    for(int i = 0; i<10000; i++){
+    for(int i = 0; i<1000; i++){
         points.addSample(Tools::generateMulDim(points.getMean(),points.getVar()));
     }
 
@@ -234,9 +234,9 @@ void StateBox::adjustSize(int x, int y)
 
       //Transfer the image over to cair image format.
       CML_color source(width, height);
-      CML_color dest(1, 1);
+//      CML_color dest(1, 1);
       CML_int source_weights(width, height);
-      CML_int dest_weights(1,1);
+//      CML_int dest_weights(1,1);
       QImagetoCML(*_img,source);
 //      QImage mskImg = _maskPix.toImage();
       for( int j=0; j<height; j++ )
@@ -253,7 +253,7 @@ void StateBox::adjustSize(int x, int y)
         }
       }
       //Call CAIR
-      CAIR_Data(&source, &source_weights, newWidth, newHeight, conv, ener, &dest_weights, &dest, updateCallbackStateBox, points);
+      CAIR_Data(&source, &source_weights, newWidth, conv, ener, points);
 //      if( !_resizeWidget.hdCheckBox->isChecked() )
 //      {
 //        CAIR( &source, &source_weights, newWidth, newHeight, conv, ener, &dest_weights, &dest, updateCallbackStateBox );

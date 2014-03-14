@@ -32,6 +32,7 @@ void Data::addData(Point newData){
 }
 
 void Data::eraseData(){
+    cerr << "ENTREE eraseData, posInsert : " << posInsert << endl;
     if(posInsert+1<dataSize){
         data[posInsert+1][0] = data[posInsert][0];
         data[posInsert+1][1] = data[posInsert][1];
@@ -41,15 +42,40 @@ void Data::eraseData(){
     }
     data.erase(data.begin()+posInsert);
     dataSize--;
+    recentInsert = false;
+    cerr << "SORTIE eraseData" << endl;
+}
+
+//delta < 0
+int Data::reduceData(int delta, int pos){
+    cerr << "ENTREE reduceData, delta : " << delta << endl;
+    for (int i = 0; i < dataSize; i++){
+        if(pos >= data[i][0] && pos <= data[i][2]){
+            int ecart = data[i][2] - data[i][0];
+            posInsert = i;
+            if(delta+ecart <= 0){
+                eraseData();
+            }else{
+                for(int j = i+1; j<dataSize; j++){
+                    data[j][0] += delta;
+                    data[j][2] += delta;
+                }
+                data[i][2] += delta;
+            }
+            cerr << "SORTIE VRAIE reduceData" << endl;
+            return delta+ecart;
+        }
+    }
+    cerr << "SORTIE FAUSSE reduceData" << endl;
+    return delta;
 }
 
 //marche seulement dans le cas de coordonnées de points comme data
-void Data::insertData4D(Point newData, double pos){
+void Data::insertData4D(Point newData, int pos){
     cerr << "ENTREE INSERT DATA 4D; pos : " << pos << endl;
     int i = 0;
     double temp1, temp2;
     int delta = newData[2] - newData[0] + 1;
-    cerr << "deltaINSIDE : " << delta << endl;
     for (std::vector<Point>::iterator it = data.begin() ; it != data.end(); ++it){
         if(pos > data[i][0] && pos < data[i][2]){
             for(int j = i+1; j<dataSize; j++){
