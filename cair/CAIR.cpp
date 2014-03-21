@@ -539,6 +539,7 @@ int Energy_Path( CML_image_ptr * Source, int * Path, CAIR_energy ener, bool firs
 	return (*Source)(min_x,height-1)->energy;
 }
 
+
 //=========================================================================================================//
 //==                                                 A D D                                               ==//
 //=========================================================================================================//
@@ -714,7 +715,7 @@ bool CAIR_Add( CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_
 	return true;
 } //end CAIR_Add()
 
-int findMinPath(CML_image_ptr * Source_ptr, CAIR_convolution conv, CAIR_energy ener){
+int* findMinPath(CML_image_ptr * Source_ptr, CAIR_convolution conv, CAIR_energy ener){
 //    cerr << "ENTREE ADD DATA" << endl;
 
     CML_image Resize_img((*Source_ptr).Width(),(*Source_ptr).Height());
@@ -737,10 +738,7 @@ int findMinPath(CML_image_ptr * Source_ptr, CAIR_convolution conv, CAIR_energy e
 
     Energy_Path( &Resize_img_ptr, Min_Path, ener, true );
 
-    int res = Min_Path[0];
-    delete[] Min_Path;
-
-    return res;
+    return Min_Path;
 }
 
 //=========================================================================================================//
@@ -1081,7 +1079,15 @@ void CAIR_Threads( int thread_count )
 
 void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolution conv, CAIR_energy ener, Data& points){
     int delta = goal_x - (*Source).Width();
-    if(points.getRecentInsert()){
+    bool test = true;
+    /*
+    for(int i = 0; i<points.getSizePos(); i++){
+        test = test & points.getRecentInsert(i);
+    }
+    */
+    if(test){
+      //  points.updateData(delta);
+        /*
         int pos = points.getPosInsert();
         if(delta < 0){
             int ecart = points[pos][2] - points[pos][0];
@@ -1105,6 +1111,7 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
                 points.setRecentInsert(false);
             }
         }
+        */
 
         return;
     }
@@ -1113,12 +1120,12 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
     CML_image Image(1,1);
     CML_image_ptr Image_Ptr(1,1);
     Init_CML_Image(Source, S_Weights, &Image, &Image_Ptr);
-    int min = findMinPath(&Image_Ptr, conv, ener);
+    int* min = findMinPath(&Image_Ptr, conv, ener);
 
     if(delta > 0){
-        points.insertData4D(Tools::generateY(points.getMean(),points.getVar(),min,min+delta-1),min);
+        points.insertData4D(Tools::generateY(points.getMean(),points.getVar(),min[0],min[0]+delta-1),min[0]);
     }else if(delta < 0){
-        delta = points.reduceData(delta,min);
+        delta = points.reduceData(delta,min[0]);
         if(delta != 0){
             points.setRecentInsert(true);
         }

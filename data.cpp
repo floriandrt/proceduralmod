@@ -4,14 +4,10 @@
 using namespace std;
 
 Data::~Data(){
-//    for(int i = 0; i<mean.getSize(); i++){
-//        delete[] var[i];
-//    }
-//    delete[] var;
+
 }
 
 Data::Data(const Data& d){
-    dataSize = d.dataSize;
     mean = d.mean;
     var = d.var;
     for(vector<Point>::size_type i=0; i < d.data.size(); ++i) {
@@ -20,20 +16,23 @@ Data::Data(const Data& d){
     for(vector<Point>::size_type i=0; i < d.sample.size(); ++i) {
         sample.push_back(d.sample[i]);
     }
+    delete[] posInsert;
+    int sizePos = sizeof(d.posInsert)/sizeof(int);
+    posInsert = new int[sizePos];
+    for(int i = 0; i<sizePos; i++){
+        posInsert[i] = d.posInsert[i];
+    }
     recentInsert = d.recentInsert;
-    posInsert = d.posInsert;
 }
 
 void Data::addData(Point newData){
-//    cerr << "ENTREE ADD DATA" << endl;
     data.push_back(newData);
-    dataSize++;
-//    cerr << "SORTIE ADD DATA" << endl;
 }
 
 void Data::eraseData(){
     cerr << "ENTREE eraseData, posInsert : " << posInsert << endl;
-    if(posInsert+1<dataSize){
+    /*
+    if(posInsert+1<(int)data.size()){
         data[posInsert+1][0] = data[posInsert][0];
         data[posInsert+1][1] = data[posInsert][1];
     }else{
@@ -41,22 +40,22 @@ void Data::eraseData(){
         data[posInsert-1][3] = data[posInsert][3];
     }
     data.erase(data.begin()+posInsert);
-    dataSize--;
     recentInsert = false;
+    */
     cerr << "SORTIE eraseData" << endl;
 }
 
 //delta < 0
 int Data::reduceData(int delta, int pos){
     cerr << "ENTREE reduceData, delta : " << delta << endl;
-    for (int i = 0; i < dataSize; i++){
+    for (int i = 0; i < (int)data.size(); i++){
         if(pos >= data[i][0] && pos <= data[i][2]){
             int ecart = data[i][2] - data[i][0];
-            posInsert = i;
+            //posInsert = i;
             if(delta+ecart <= 0){
                 eraseData();
             }else{
-                for(int j = i+1; j<dataSize; j++){
+                for(int j = i+1; j<(int)data.size(); j++){
                     data[j][0] += delta;
                     data[j][2] += delta;
                 }
@@ -70,15 +69,51 @@ int Data::reduceData(int delta, int pos){
     return delta;
 }
 
+/*
+void Data::updateData(int delta){
+    int pos;
+    for(int k = 0; k<sizePos; k++){
+        pos = posInsert[k];
+        if(delta < 0){
+            int ecart = points[pos][2] - points[pos][0];
+            if(delta+ecart <= 0){
+                points.eraseData();
+            }else{
+                for(int j = pos+1; j<points.getDataSize(); j++){
+                    points[j][0] += delta;
+                    points[j][2] += delta;
+                }
+                points[pos][2] += delta;
+            }
+        }
+        if(delta > 0){
+            points[pos][2] += delta;
+            for(int i = pos+1; i<points.getDataSize(); i++){
+                points[i][0] += delta;
+                points[i][2] += delta;
+            }
+            if(Tools::isGaussian(points[pos],points.getMean(),points.getVar(),points.getSample())){
+                recentInsert[k] = false;
+            }
+        }
+    }
+}
+
+*/
+void Data::insertDataNet(){
+
+}
+
 //marche seulement dans le cas de coordonnées de points comme data
 void Data::insertData4D(Point newData, int pos){
     cerr << "ENTREE INSERT DATA 4D; pos : " << pos << endl;
+    /*
     int i = 0;
     double temp1, temp2;
     int delta = newData[2] - newData[0] + 1;
     for (std::vector<Point>::iterator it = data.begin() ; it != data.end(); ++it){
         if(pos > data[i][0] && pos < data[i][2]){
-            for(int j = i+1; j<dataSize; j++){
+            for(int j = i+1; j<(int)data.size(); j++){
                 data[j][0] += delta;
                 data[j][2] += delta;
             }
@@ -87,13 +122,11 @@ void Data::insertData4D(Point newData, int pos){
             data[i][2] = newData[0];
             data[i][3] = newData[1];
             it = data.insert(++it,newData);
-            dataSize++;
             newData[0] = newData[2];
             newData[1] = newData[3];
             newData[2] = temp1+delta;
             newData[3] = temp2;
             data.insert(++it,newData);
-            dataSize++;
             cerr << *this << endl;
             cerr << "i : " << i << endl;
             cerr << "SORTIE AVEC INSERT DATA 4D" << endl;
@@ -102,7 +135,7 @@ void Data::insertData4D(Point newData, int pos){
             return;
         }
         if(pos == data[i][0]){
-            for(int j = i; j<dataSize; j++){
+            for(int j = i; j<(int)data.size(); j++){
                 data[j][0] += delta;
                 data[j][2] += delta;
             }
@@ -111,7 +144,6 @@ void Data::insertData4D(Point newData, int pos){
             data[i][0] = newData[2];
             data[i][1] = newData[3];
             data.insert(it,newData);
-            dataSize++;
             recentInsert = true;
             posInsert = i;
             cerr << *this << endl;
@@ -119,11 +151,10 @@ void Data::insertData4D(Point newData, int pos){
             cerr << "SORTIE AVEC INSERT DATA 4D" << endl;
             return;
         }
-        if(pos == data[dataSize-1][2]){
+        if(pos == data[data.size()-1][2]){
             data[i][2] = newData[0];
             data[i][3] = newData[1];
             data.push_back(newData);
-            dataSize++;
             recentInsert = true;
             posInsert = i+1;
             cerr << *this << endl;
@@ -133,11 +164,12 @@ void Data::insertData4D(Point newData, int pos){
         }
         i++;
     }
+    */
     cerr << "SORTIE SANS INSERT DATA 4D" << endl;
 }
 
 int Data::getDataSize() const{
-    return dataSize;
+    return data.size();
 }
 
 Point Data::getMean(){
@@ -161,19 +193,19 @@ void Data::setVar(double **v){
 }
 
 void Data::setRecentInsert(bool b){
-    recentInsert = b;
+//    recentInsert = b;
 }
 
 void Data::addSample(Point value){
     sample.push_back(value);
 }
 
-bool Data::getRecentInsert(){
-    return recentInsert;
+bool Data::getRecentInsert(int pos){
+    return recentInsert[pos];
 }
 
 int Data::getPosInsert(){
-    return posInsert;
+    return 0; //posInsert;
 }
 
 Point& Data::operator[](int i){

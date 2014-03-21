@@ -25,7 +25,8 @@ HEADERS += mainwindow.h \
     ImageScene.h \
     data.h \
     tools.h \
-    point.h
+    point.h \
+    tree.h
 
 FORMS += resizewidget.ui
 

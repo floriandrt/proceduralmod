@@ -35,7 +35,7 @@ using namespace std;
   *
   */
 
-void drawImagefromData(Data d, QImage* _img){
+void drawImagefromData(Data& d, QImage* _img){
     QPainter qPaint;
     qPaint.begin(_img);
     qPaint.setBrush(Qt::NoBrush);
@@ -44,6 +44,31 @@ void drawImagefromData(Data d, QImage* _img){
         qPaint.drawLine(d[i][0],d[i][1],d[i][2],d[i][3]);
     }
     qPaint.end();
+}
+
+void f(Tree<Data>* t, QPainter& qPaint){
+    if(!t->getIsLeaf()){
+        for(int i = 0; i<t->getChildrenSize(); i++){
+            f((*t)[i], qPaint);
+        }
+    }
+    Data* temp = t->getValue();
+    for(int i = 0; i<temp->getDataSize(); i++){
+        qPaint.drawLine((*temp)[i][0],(*temp)[i][1],(*temp)[i][2],(*temp)[i][3]);
+    }
+}
+
+void drawImagefromData(Tree<Data>& t, QImage* _img){
+    cerr << "ENTREE DRAW TREE" << endl;
+    QPainter qPaint;
+    qPaint.begin(_img);
+    qPaint.setBrush(Qt::NoBrush);
+    qPaint.setPen(Qt::white);
+    for(int i = 0; i<t.getChildrenSize(); i++){
+        f(t[i], qPaint);
+    }
+    qPaint.end();
+    cerr << "SORTIE DRAW TREE" << endl;
 }
 
 StateBox::StateBox(ImageScene *_scene):
@@ -60,65 +85,136 @@ StateBox::StateBox(ImageScene *_scene):
         _mainScene(_scene)
 {
     cerr << "ENTREE INIT STATEBOX" << endl;
-    Point p1(4);
-    p1[0] = 0;
-    p1[1] = 50;
-    p1[2] = 20;
-    p1[3] = 90;
-    points.addData(p1);
-    Point p2(4);
-    p2[0] = 20;
-    p2[1] = 90;
-    p2[2] = 40;
-    p2[3] = 20;
-    points.addData(p2);
-    Point p3(4);
-    p3[0] = 40;
-    p3[1] = 20;
-    p3[2] = 60;
-    p3[3] = 60;
-    points.addData(p3);
-    Point p4(4);
-    p4[0] = 60;
-    p4[1] = 60;
-    p4[2] = 100;
-    p4[3] = 60;
-    points.addData(p4);
-//    Point p1(4);
-//    p1[0] = 0;
-//    p1[1] = 50;
-//    p1[2] = 20;
-//    p1[3] = 60;
-//    points.addData(p1);
-//    Point p2(4);
-//    p2[0] = 20;
-//    p2[1] = 60;
-//    p2[2] = 40;
-//    p2[3] = 55;
-//    points.addData(p2);
-//    Point p3(4);
-//    p3[0] = 40;
-//    p3[1] = 55;
-//    p3[2] = 60;
-//    p3[3] = 45;
-//    points.addData(p3);
-//    Point p4(4);
-//    p4[0] = 60;
-//    p4[1] = 45;
-//    p4[2] = 100;
-//    p4[3] = 50;
-//    points.addData(p4);
+    Data d1;
+    Data d2;
+    Data d3;
+    Data d4;
+    Data d5;
+    Data d6;
+    Point p11(4);
+    p11[0] = 0;
+    p11[1] = 10;
+    p11[2] = 50;
+    p11[3] = 90;
+    d1.addData(p11);
+    Point p12(4);
+    p12[0] = 50;
+    p12[1] = 90;
+    p12[2] = 100;
+    p12[3] = 60;
+    d1.addData(p12);
+
+    Point p21(4);
+    p21[0] = 0;
+    p21[1] = 100;
+    p21[2] = 60;
+    p21[3] = 120;
+    d2.addData(p21);
+    Point p22(4);
+    p22[0] = 60;
+    p22[1] = 120;
+    p22[2] = 100;
+    p22[3] = 60;
+    d2.addData(p22);
+
+    Point p31(4);
+    p31[0] = 0;
+    p31[1] = 200;
+    p31[2] = 80;
+    p31[3] = 230;
+    d3.addData(p31);
+    Point p32(4);
+    p32[0] = 80;
+    p32[1] = 230;
+    p32[2] = 100;
+    p32[3] = 60;
+    d3.addData(p32);
+
+    Point p41(4);
+    p41[0] = 100;
+    p41[1] = 60;
+    p41[2] = 160;
+    p41[3] = 60;
+    d4.addData(p41);
+    Point p42(4);
+    p42[0] = 160;
+    p42[1] = 60;
+    p42[2] = 250;
+    p42[3] = 300;
+    d4.addData(p42);
+    Point p43(4);
+    p43[0] = 250;
+    p43[1] = 300;
+    p43[2] = 340;
+    p43[3] = 100;
+    d4.addData(p43);
+    Point p44(4);
+    p44[0] = 340;
+    p44[1] = 100;
+    p44[2] = 400;
+    p44[3] = 60;
+    d4.addData(p44);
+
+    Point p51(4);
+    p51[0] = 400;
+    p51[1] = 60;
+    p51[2] = 450;
+    p51[3] = 10;
+    d5.addData(p51);
+    Point p52(4);
+    p52[0] = 450;
+    p52[1] = 10;
+    p52[2] = 500;
+    p52[3] = 50;
+    d5.addData(p52);
+
+    Point p61(4);
+    p61[0] = 400;
+    p61[1] = 60;
+    p61[2] = 420;
+    p61[3] = 230;
+    d6.addData(p61);
+    Point p62(4);
+    p62[0] = 420;
+    p62[1] = 230;
+    p62[2] = 500;
+    p62[3] = 180;
+    d6.addData(p62);
+
+    /*
     points.setMean(Tools::averageMulDim(points));
     points.setVar(Tools::varianceMulDim(points,points.getMean()));
     for(int i = 0; i<1000; i++){
         points.addSample(Tools::generateMulDim(points.getMean(),points.getVar()));
     }
+    */
+    cerr << "DEBUT" << endl;
+//    Tree<Data> t;
+    Tree<Data>** x = new Tree<Data>*[3];
+    x[0] = new Tree<Data>(&d1);
+    x[1] = new Tree<Data>(&d2);
+    x[2] = new Tree<Data>(&d3);
+    cerr << "SETCHILDREN 1" << endl;
+    t.setChildren(x,3);
+    x = new Tree<Data>*[1];
+    x[0] = new Tree<Data>(&d4);
+    cerr << "SETCHILDREN 21" << endl;
+    t[0]->setChildren(x,1);
+    cerr << "SETCHILDREN 22" << endl;
+    t[1]->setChildren(x,1);
+    cerr << "SETCHILDREN 23" << endl;
+    t[2]->setChildren(x,1);
+    x = new Tree<Data>*[2];
+    x[0] = new Tree<Data>(&d5);
+    x[1] = new Tree<Data>(&d6);
+    cerr << "SETCHILDREN 3" << endl;
+    (*t[0])[0]->setChildren(x,2);
 
     _outterborderPen.setWidth(2);
     _outterborderPen.setColor(_outterborderColor);
 
-    _img = new QImage(QSize(100,100),QImage::Format_RGB32);
-    drawImagefromData(points,_img);
+    _img = new QImage(QSize(500,500),QImage::Format_RGB32);
+    drawImagefromData(t,_img);
 
     _width = _img->width()+32;
     _height = _img->height()+32;
