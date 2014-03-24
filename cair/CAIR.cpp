@@ -715,7 +715,7 @@ bool CAIR_Add( CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_
 	return true;
 } //end CAIR_Add()
 
-int* findMinPath(CML_image_ptr * Source_ptr, CAIR_convolution conv, CAIR_energy ener){
+vector<int> findMinPath(CML_image_ptr * Source_ptr, CAIR_convolution conv, CAIR_energy ener){
 //    cerr << "ENTREE ADD DATA" << endl;
 
     CML_image Resize_img((*Source_ptr).Width(),(*Source_ptr).Height());
@@ -738,7 +738,45 @@ int* findMinPath(CML_image_ptr * Source_ptr, CAIR_convolution conv, CAIR_energy 
 
     Energy_Path( &Resize_img_ptr, Min_Path, ener, true );
 
-    return Min_Path;
+    vector<int> res;
+
+    cout << "MIN PATH IMAGE DEBUT" << endl;
+    for(int y = 0; y<Resize_img_ptr.Height(); y++){
+        if(((*Source_ptr)(Min_Path[y],y)->image).red == 255){
+            res.push_back(Min_Path[y]);
+            res.push_back(y);
+            cout << "Pixel pos : " << Min_Path[y] << ", " << y << endl;
+        }
+        /*
+        cout << static_cast<unsigned>(((*Source_ptr)(Min_Path[y],y)->image).red) << endl;
+        cout << static_cast<unsigned>(((*Source_ptr)(Min_Path[y],y)->image).green) << endl;
+        cout << static_cast<unsigned>(((*Source_ptr)(Min_Path[y],y)->image).blue) << endl;
+        */
+    }
+    cout << "MIN PATH IMAGE FIN" << endl;
+
+    return res;
+}
+
+Data* findData(Tree<Data>* t, Data* d, int x, int y){
+    cout << "ENTREE FIND DATA" << endl;
+    for(int i = 0; i<t->getChildrenSize(); i++){
+        findData((*t)[i], d, x, y);
+    }
+    Data* data = t->getValue();
+    if(data == NULL){
+        return d;
+    }
+    cout << "xMin " << data->xMin() << endl;
+    cout << "xMax " << data->xMax() << endl;
+    cout << "yMin " << data->yMin() << endl;
+    cout << "yMax " << data->yMax() << endl;
+    if(x >= data->xMin() && x <= data->xMax() && y >= data->yMin() && y <= data->yMax() && data->has(x,y)){
+        cout << "affectation d dans findData" << endl;
+        d = data;
+        return d;
+    }
+    return d;
 }
 
 //=========================================================================================================//
@@ -1077,9 +1115,11 @@ void CAIR_Threads( int thread_count )
 	}
 }
 
-void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolution conv, CAIR_energy ener, Data& points){
+void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolution conv, CAIR_energy ener, Tree<Data>& t, Data& points){
+    cerr << "CAIR DATA ENTREE" << endl;
+
     int delta = goal_x - (*Source).Width();
-    bool test = true;
+    bool test = false;
     /*
     for(int i = 0; i<points.getSizePos(); i++){
         test = test & points.getRecentInsert(i);
@@ -1120,21 +1160,23 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
     CML_image Image(1,1);
     CML_image_ptr Image_Ptr(1,1);
     Init_CML_Image(Source, S_Weights, &Image, &Image_Ptr);
-    int* min = findMinPath(&Image_Ptr, conv, ener);
-
-    if(delta > 0){
-        points.insertData4D(Tools::generateY(points.getMean(),points.getVar(),min[0],min[0]+delta-1),min[0]);
-    }else if(delta < 0){
-        delta = points.reduceData(delta,min[0]);
-        if(delta != 0){
-            points.setRecentInsert(true);
-        }
-        if(delta < 0){
-            cerr << "GROS PROBLEME DELTA ENCORE <0" << endl;
+    vector<int> min = findMinPath(&Image_Ptr, conv, ener);
+    Data* temp;
+    for(int i = 0; i<(int)min.size(); i+=2){
+        findData(&t, temp, min[i], min[i+1]);
+        if(delta > 0){
+            temp->insertData4D(Tools::generateY(points.getMean(),points.getVar(),min[i],min[i]+delta-1),min[i]);
+        }else if(delta < 0){
+            delta = temp->reduceData(delta,min[i]);
+            if(delta != 0){
+                //t.setRecentInsert(true, i);
+            }
+            if(delta < 0){
+                cerr << "GROS PROBLEME DELTA ENCORE <0" << endl;
+            }
         }
     }
     Shutdown_Threads();
-    return;
 }
 
 //=========================================================================================================//

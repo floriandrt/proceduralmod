@@ -24,6 +24,7 @@
 
 #include "CAIR_CML.h"
 #include "../data.h"
+#include "../tree.h"
 
 //=========================================================================================================//
 //The default number of threads that will be used for Grayscale, Edge, and Add/Remove operations.
@@ -54,7 +55,7 @@ void CAIR_Threads( int thread_count );
 //Forward energy removes most serious artifacts from a retarget, but is slightly more costly in terms of performance.
 enum CAIR_convolution { PREWITT = 0, V1 = 1, V_SQUARE = 2, SOBEL = 3, LAPLACIAN = 4 };
 enum CAIR_energy { BACKWARD = 0, FORWARD = 1 };
-void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolution conv, CAIR_energy ener, Data& points);
+void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolution conv, CAIR_energy ener, Tree<Data>& t, Data& points);
 bool CAIR( CML_color * Source,
            CML_int * S_Weights,
            int goal_x,

@@ -9,14 +9,17 @@ class Data{
     private:
 //        int dataSize; //number of data
         std::vector<Point> data;
-        std::vector<Point> base;
         std::vector<Point> sample;
         Point mean;
         double** var;
         bool* recentInsert;
         int* posInsert;
+        int minX;
+        int maxX;
+        int minY;
+        int maxY;
     public:
-        Data(): data(), base(), sample(), mean(0), var(NULL), recentInsert(false), posInsert(){}
+        Data(): data(), sample(), mean(0), var(NULL), recentInsert(false), posInsert(), minX(0), maxX(0), minY(0), maxY(0){}
         Data(const Data& d);
         ~Data();
         void addData(Point newData);
@@ -35,6 +38,11 @@ class Data{
         void addSample(Point value);
         bool getRecentInsert(int pos);
         int getPosInsert();
+        int xMin();
+        int xMax();
+        int yMin();
+        int yMax();
+        bool has(int x, int y);
         Point& operator[](int i);
         friend std::ostream& operator<<( std::ostream &flux, Data const& d );
 };

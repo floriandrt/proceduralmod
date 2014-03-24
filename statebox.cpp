@@ -85,101 +85,103 @@ StateBox::StateBox(ImageScene *_scene):
         _mainScene(_scene)
 {
     cerr << "ENTREE INIT STATEBOX" << endl;
-    Data d1;
-    Data d2;
-    Data d3;
-    Data d4;
-    Data d5;
-    Data d6;
+
+    Data* d1 = new Data();
+    Data* d2 = new Data();
+    Data* d3 = new Data();
+    Data* d4 = new Data();
+    Data* d5 = new Data();
+    Data* d6 = new Data();
+
     Point p11(4);
     p11[0] = 0;
     p11[1] = 10;
     p11[2] = 50;
     p11[3] = 90;
-    d1.addData(p11);
+    d1->addData(p11);
     Point p12(4);
     p12[0] = 50;
     p12[1] = 90;
     p12[2] = 100;
     p12[3] = 60;
-    d1.addData(p12);
+    d1->addData(p12);
 
     Point p21(4);
     p21[0] = 0;
     p21[1] = 100;
     p21[2] = 60;
     p21[3] = 120;
-    d2.addData(p21);
+    d2->addData(p21);
     Point p22(4);
     p22[0] = 60;
     p22[1] = 120;
     p22[2] = 100;
     p22[3] = 60;
-    d2.addData(p22);
+    d2->addData(p22);
 
     Point p31(4);
     p31[0] = 0;
     p31[1] = 200;
     p31[2] = 80;
     p31[3] = 230;
-    d3.addData(p31);
+    d3->addData(p31);
     Point p32(4);
     p32[0] = 80;
     p32[1] = 230;
     p32[2] = 100;
     p32[3] = 60;
-    d3.addData(p32);
+    d3->addData(p32);
 
     Point p41(4);
     p41[0] = 100;
     p41[1] = 60;
     p41[2] = 160;
     p41[3] = 60;
-    d4.addData(p41);
+    d4->addData(p41);
     Point p42(4);
     p42[0] = 160;
     p42[1] = 60;
     p42[2] = 250;
     p42[3] = 300;
-    d4.addData(p42);
+    d4->addData(p42);
     Point p43(4);
     p43[0] = 250;
     p43[1] = 300;
     p43[2] = 340;
     p43[3] = 100;
-    d4.addData(p43);
+    d4->addData(p43);
     Point p44(4);
     p44[0] = 340;
     p44[1] = 100;
     p44[2] = 400;
     p44[3] = 60;
-    d4.addData(p44);
+    d4->addData(p44);
 
     Point p51(4);
     p51[0] = 400;
     p51[1] = 60;
     p51[2] = 450;
     p51[3] = 10;
-    d5.addData(p51);
+    d5->addData(p51);
     Point p52(4);
     p52[0] = 450;
     p52[1] = 10;
     p52[2] = 500;
     p52[3] = 50;
-    d5.addData(p52);
+    d5->addData(p52);
 
     Point p61(4);
     p61[0] = 400;
     p61[1] = 60;
     p61[2] = 420;
     p61[3] = 230;
-    d6.addData(p61);
+    d6->addData(p61);
     Point p62(4);
     p62[0] = 420;
     p62[1] = 230;
     p62[2] = 500;
     p62[3] = 180;
-    d6.addData(p62);
+    d6->addData(p62);
 
     /*
     points.setMean(Tools::averageMulDim(points));
@@ -189,15 +191,14 @@ StateBox::StateBox(ImageScene *_scene):
     }
     */
     cerr << "DEBUT" << endl;
-//    Tree<Data> t;
     Tree<Data>** x = new Tree<Data>*[3];
-    x[0] = new Tree<Data>(&d1);
-    x[1] = new Tree<Data>(&d2);
-    x[2] = new Tree<Data>(&d3);
+    x[0] = new Tree<Data>(d1);
+    x[1] = new Tree<Data>(d2);
+    x[2] = new Tree<Data>(d3);
     cerr << "SETCHILDREN 1" << endl;
     t.setChildren(x,3);
     x = new Tree<Data>*[1];
-    x[0] = new Tree<Data>(&d4);
+    x[0] = new Tree<Data>(d4);
     cerr << "SETCHILDREN 21" << endl;
     t[0]->setChildren(x,1);
     cerr << "SETCHILDREN 22" << endl;
@@ -205,8 +206,8 @@ StateBox::StateBox(ImageScene *_scene):
     cerr << "SETCHILDREN 23" << endl;
     t[2]->setChildren(x,1);
     x = new Tree<Data>*[2];
-    x[0] = new Tree<Data>(&d5);
-    x[1] = new Tree<Data>(&d6);
+    x[0] = new Tree<Data>(d5);
+    x[1] = new Tree<Data>(d6);
     cerr << "SETCHILDREN 3" << endl;
     (*t[0])[0]->setChildren(x,2);
 
@@ -296,6 +297,7 @@ void StateBox::adjustSize(int x, int y)
  * **********
 */
 
+
 //      int weight_scale = (int)(_resizeWidget.weightScaleLineEdit->text().toInt() * (_resizeWidget.brushWeightSlider->value() / 100.0));
       CAIR_convolution conv = V1;
 //      switch( _resizeWidget.edgeDetector->currentIndex() )
@@ -349,7 +351,7 @@ void StateBox::adjustSize(int x, int y)
         }
       }
       //Call CAIR
-      CAIR_Data(&source, &source_weights, newWidth, conv, ener, points);
+      CAIR_Data(&source, &source_weights, newWidth, conv, ener, t, points);
 //      if( !_resizeWidget.hdCheckBox->isChecked() )
 //      {
 //        CAIR( &source, &source_weights, newWidth, newHeight, conv, ener, &dest_weights, &dest, updateCallbackStateBox );

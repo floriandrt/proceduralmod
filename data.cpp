@@ -10,6 +10,10 @@ Data::~Data(){
 Data::Data(const Data& d){
     mean = d.mean;
     var = d.var;
+    minX = d.minX;
+    minY = d.minY;
+    maxX = d.maxX;
+    maxY = d.maxY;
     for(vector<Point>::size_type i=0; i < d.data.size(); ++i) {
         data.push_back(d.data[i]);
     }
@@ -25,7 +29,36 @@ Data::Data(const Data& d){
     recentInsert = d.recentInsert;
 }
 
+int min(int a, int b){
+    if(a < b){
+        return a;
+    }
+    return b;
+}
+
+int max(int a, int b){
+    if(a > b){
+        return a;
+    }
+    return b;
+}
+
 void Data::addData(Point newData){
+    if((int)data.size() == 0){
+        minX = min(newData[0],newData[2]);
+        maxX = max(newData[0],newData[2]);
+        minY = min(newData[1],newData[3]);
+        maxY = max(newData[1],newData[3]);
+    }else{
+        minX = min(newData[0],minX);
+        minX = min(newData[2],minX);
+        maxX = max(newData[0],maxX);
+        maxX = max(newData[2],maxX);
+        minY = min(newData[1],minY);
+        minY = min(newData[3],minY);
+        maxY = max(newData[1],maxY);
+        maxY = max(newData[3],maxY);
+    }
     data.push_back(newData);
 }
 
@@ -206,6 +239,48 @@ bool Data::getRecentInsert(int pos){
 
 int Data::getPosInsert(){
     return 0; //posInsert;
+}
+
+int Data::xMin(){
+    return minX;
+}
+
+int Data::xMax(){
+    return maxX;
+}
+
+int Data::yMin(){
+    return minY;
+}
+
+int Data::yMax(){
+    return maxY;
+}
+
+bool Data::has(int x, int y){
+    cout << "ENTREE HAS, data size : " << (int)data.size() << endl;
+    double a, b;
+    for(int i = 0; i<(int)data.size(); i++){
+        a = 0;
+        if(data[i][0] != data[i][2]){
+            a = data[i][3]-data[i][1];
+            a /= data[i][2]-data[i][0];
+        }
+        b = data[i][3]-(data[i][2]*a);
+        cout << data[i][3] << endl;
+        cout << data[i][2] << endl;
+        cout << data[i][1] << endl;
+        cout << data[i][0] << endl;
+        cout << "a : " << a << endl;
+        cout << "a*x+b " << a*x+b << endl;
+        cout << "y " << y << endl;
+        if((a*x+b) < y+2 && (a*x+b) > y-2){
+            cout << "data->has TRUE" << endl;
+            return true;
+        }
+    }
+    cout << "data->has FALSE" << endl;
+    return false;
 }
 
 Point& Data::operator[](int i){

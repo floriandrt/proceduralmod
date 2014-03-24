@@ -186,7 +186,7 @@ MainWindow::MainWindow()
   _resizeWidget.hdCheckBox->setToolTip(hdToolTip);
   _resizeWidget.energyCheckBox->setToolTip(energyToolTip);
 
-  resize(700, 400);
+  resize(1500, 600);
 }
 
 void MainWindow::open()
