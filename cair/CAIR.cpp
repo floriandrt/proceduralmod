@@ -715,69 +715,8 @@ bool CAIR_Add( CML_image * Source, CML_image_ptr * Source_ptr, int goal_x, CAIR_
 	return true;
 } //end CAIR_Add()
 
-vector<int> findMinPath(CML_image_ptr * Source_ptr, CAIR_convolution conv, CAIR_energy ener){
-//    cerr << "ENTREE ADD DATA" << endl;
 
-    CML_image Resize_img((*Source_ptr).Width(),(*Source_ptr).Height());
-    CML_image_ptr Resize_img_ptr((*Source_ptr).Width(),(*Source_ptr).Height());
 
-    for(int y = 0; y < (*Source_ptr).Height(); y++)
-    {
-        for(int x = 0; x < (*Source_ptr).Width(); x++)
-        {
-            Resize_img(x,y).image = (*Source_ptr)(x,y)->image;
-            Resize_img(x,y).weight = (*Source_ptr)(x,y)->weight;
-            Resize_img(x,y).removed = false;
-            Resize_img_ptr(x,y) = &(Resize_img(x,y));
-        }
-    }
-
-    int * Min_Path = new int[Resize_img_ptr.Height()];
-    Grayscale_Image( &Resize_img_ptr);
-    Edge_Detect( &Resize_img_ptr, conv );
-
-    Energy_Path( &Resize_img_ptr, Min_Path, ener, true );
-
-    vector<int> res;
-
-    cout << "MIN PATH IMAGE DEBUT" << endl;
-    for(int y = 0; y<Resize_img_ptr.Height(); y++){
-        if(((*Source_ptr)(Min_Path[y],y)->image).red == 255){
-            res.push_back(Min_Path[y]);
-            res.push_back(y);
-            cout << "Pixel pos : " << Min_Path[y] << ", " << y << endl;
-        }
-        /*
-        cout << static_cast<unsigned>(((*Source_ptr)(Min_Path[y],y)->image).red) << endl;
-        cout << static_cast<unsigned>(((*Source_ptr)(Min_Path[y],y)->image).green) << endl;
-        cout << static_cast<unsigned>(((*Source_ptr)(Min_Path[y],y)->image).blue) << endl;
-        */
-    }
-    cout << "MIN PATH IMAGE FIN" << endl;
-
-    return res;
-}
-
-Data* findData(Tree<Data>* t, Data* d, int x, int y){
-    cout << "ENTREE FIND DATA" << endl;
-    for(int i = 0; i<t->getChildrenSize(); i++){
-        findData((*t)[i], d, x, y);
-    }
-    Data* data = t->getValue();
-    if(data == NULL){
-        return d;
-    }
-    cout << "xMin " << data->xMin() << endl;
-    cout << "xMax " << data->xMax() << endl;
-    cout << "yMin " << data->yMin() << endl;
-    cout << "yMax " << data->yMax() << endl;
-    if(x >= data->xMin() && x <= data->xMax() && y >= data->yMin() && y <= data->yMax() && data->has(x,y)){
-        cout << "affectation d dans findData" << endl;
-        d = data;
-        return d;
-    }
-    return d;
-}
 
 //=========================================================================================================//
 //==                                             R E M O V E                                             ==//
@@ -1115,68 +1054,163 @@ void CAIR_Threads( int thread_count )
 	}
 }
 
-void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolution conv, CAIR_energy ener, Tree<Data>& t, Data& points){
+int* findMinPath(CML_image_ptr * Source_ptr, CAIR_convolution conv, CAIR_energy ener){
+//    cerr << "ENTREE ADD DATA" << endl;
+
+    CML_image Resize_img((*Source_ptr).Width(),(*Source_ptr).Height());
+    CML_image_ptr Resize_img_ptr((*Source_ptr).Width(),(*Source_ptr).Height());
+
+    for(int y = 0; y < (*Source_ptr).Height(); y++)
+    {
+        for(int x = 0; x < (*Source_ptr).Width(); x++)
+        {
+            Resize_img(x,y).image = (*Source_ptr)(x,y)->image;
+            Resize_img(x,y).weight = (*Source_ptr)(x,y)->weight;
+            Resize_img(x,y).removed = false;
+            Resize_img_ptr(x,y) = &(Resize_img(x,y));
+        }
+    }
+
+    int * Min_Path = new int[Resize_img_ptr.Height()];
+    Grayscale_Image( &Resize_img_ptr);
+    Edge_Detect( &Resize_img_ptr, conv );
+
+    Energy_Path( &Resize_img_ptr, Min_Path, ener, true );
+
+    return Min_Path;
+}
+
+//prérequis segX[0] < segX[2]
+double* intersection(Point seg1, Point seg2){
+    //cerr << "INTERSECTION ENTREE" << endl;
+    double a1 = 0;
+    if(seg1[0] != seg1[2]){
+        a1 = seg1[1]-seg1[3];
+        a1 /= seg1[0]-seg1[2];
+    }
+    double a2 = 0;
+    if(seg2[0] != seg2[2]){
+        a2 = seg2[1]-seg2[3];
+        a2 /= seg2[0]-seg2[2];
+    }
+    double b1 = seg1[2]-(a1*seg1[0]);
+    double b2 = seg2[2]-(a2*seg2[0]);
+    if(a2 == a1){
+        //cerr << "INTERSECTION SORTIE NOT FIND" << endl;
+        return new double[2]{-1,-1};
+    }
+    double resX = b1-b2;
+    resX /= a2-a1;
+    double resY = a1*resX+b1;
+    if(resX < seg1[0] || resX > seg1[2]){
+        //cerr << "INTERSECTION SORTIE NOT FIND" << endl;
+        return new double[2]{-1,-1};
+    }
+    //cerr << "INTERSECTION SORTIE FIND" << endl;
+    return new double[2]{resX, resY};
+}
+
+Data* findData(Tree<Data>* t, Point seg2, double** inter, int& index){
+    //cerr << "FIND DATA ENTREE" << endl;
+    Data* d = t->getValue();
+    if(d != NULL && seg2[0] >= d->xMin() && seg2[1] >= d->yMin() && seg2[2] <= d->xMax() && seg2[3] <= d->yMax()){
+        for(int i = 0; i<d->getDataSize(); i++){
+            *inter = intersection((*d)[i], seg2);
+            if((*inter[0]) != -1){
+                index = i;
+                cerr << "FIND DATA SORTIE NON NULL non rec "  << (*inter)[0] << ", " << (*inter)[1] << endl;
+                return d;
+            }
+        }
+    }
+    for(int i = 0; i<t->getChildrenSize(); i++){
+        d = findData((*t)[i], seg2, inter, index);
+        if(d != NULL){
+            cerr << "FIND DATA SORTIE NON NULL rec" << endl;
+            return d;
+        }
+    }
+    //cerr << "FIND DATA SORTIE" << endl;
+    return NULL;
+}
+
+void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolution conv, CAIR_energy ener, Tree<Data>& t){
     cerr << "CAIR DATA ENTREE" << endl;
 
     int delta = goal_x - (*Source).Width();
-    bool test = false;
-    /*
-    for(int i = 0; i<points.getSizePos(); i++){
-        test = test & points.getRecentInsert(i);
-    }
-    */
-    if(test){
-      //  points.updateData(delta);
-        /*
-        int pos = points.getPosInsert();
-        if(delta < 0){
-            int ecart = points[pos][2] - points[pos][0];
-            if(delta+ecart <= 0){
-                points.eraseData();
-            }else{
-                for(int j = pos+1; j<points.getDataSize(); j++){
-                    points[j][0] += delta;
-                    points[j][2] += delta;
-                }
-                points[pos][2] += delta;
-            }
-        }
-        if(delta > 0){
-            points[pos][2] += delta;
-            for(int i = pos+1; i<points.getDataSize(); i++){
-                points[i][0] += delta;
-                points[i][2] += delta;
-            }
-            if(Tools::isGaussian(points[pos],points.getMean(),points.getVar(),points.getSample())){
-                points.setRecentInsert(false);
-            }
-        }
-        */
+    Data* d;
 
-        return;
-    }
-
-    Startup_Threads();
-    CML_image Image(1,1);
-    CML_image_ptr Image_Ptr(1,1);
-    Init_CML_Image(Source, S_Weights, &Image, &Image_Ptr);
-    vector<int> min = findMinPath(&Image_Ptr, conv, ener);
-    Data* temp;
-    for(int i = 0; i<(int)min.size(); i+=2){
-        findData(&t, temp, min[i], min[i+1]);
-        if(delta > 0){
-            temp->insertData4D(Tools::generateY(points.getMean(),points.getVar(),min[i],min[i]+delta-1),min[i]);
-        }else if(delta < 0){
-            delta = temp->reduceData(delta,min[i]);
-            if(delta != 0){
-                //t.setRecentInsert(true, i);
-            }
+    if(t.getRecentSize() != 0){
+        for(int i = 0; i<t.getRecentSize(); i++){
+            d = t.getRecentData(i);
+            int pos = d->getPosInsert();
             if(delta < 0){
-                cerr << "GROS PROBLEME DELTA ENCORE <0" << endl;
+                int ecart = (*d)[pos][2] - (*d)[pos][0];
+                if(delta+ecart <= 0){
+                    d->eraseData();
+                }else{
+                    for(int j = pos+1; j<d->getDataSize(); j++){
+                        (*d)[j][0] += delta;
+                        (*d)[j][2] += delta;
+                    }
+                    (*d)[pos][2] += delta;
+                }
+            }
+            if(delta > 0){
+                (*d)[pos][2] += delta;
+                for(int k = pos+1; k<d->getDataSize(); k++){
+                    (*d)[k][0] += delta;
+                    (*d)[k][2] += delta;
+                }
+                if(Tools::isGaussian((*d)[pos],d->getMean(),d->getVar(),d->getSample())){
+                    t.eraseRecentData(i);
+                }
             }
         }
+
+    }else{
+        Startup_Threads();
+        CML_image Image(1,1);
+        CML_image_ptr Image_Ptr(1,1);
+        Init_CML_Image(Source, S_Weights, &Image, &Image_Ptr);
+        int* min = findMinPath(&Image_Ptr, conv, ener);
+        Point seg2(4);
+        double** inter = new double*();
+        int index;
+        for(int i = 0; i+1<Image_Ptr.Height(); i++){
+            seg2[0] = min[i];
+            seg2[1] = i;
+            seg2[2] = min[i+1];
+            seg2[3] = i+1;
+            d = findData(&t, seg2, inter, index);
+            if(d != NULL){
+                if(delta > 0){
+                    cerr << "inter 0 " << (*inter)[0] << endl;
+                    d->insertData4D(Tools::generateY(d->getMean(),d->getVar(),(*inter)[0],(*inter)[0]+delta-1), (*inter)[0], index);
+                }else if(delta < 0){
+                    delta = d->reduceData(delta,index);
+                    if(delta != 0){
+                        d->eraseData();
+                        if(d->getDataSize() == 0){
+                            t.eraseRecentData(i);
+                        }
+                    }
+                    if(delta < 0){
+                        cerr << "GROS PROBLEME DELTA ENCORE <0" << endl;
+                    }
+                }
+            }else{
+                //cerr << "D NULL" << endl;
+            }
+        }
+
+        delete[] min;
+        delete[] inter;
+        Shutdown_Threads();
+
     }
-    Shutdown_Threads();
+
+    cerr << "CAIR DATA SORTIE" << endl;
 }
 
 //=========================================================================================================//

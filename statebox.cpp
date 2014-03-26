@@ -105,6 +105,11 @@ StateBox::StateBox(ImageScene *_scene):
     p12[2] = 100;
     p12[3] = 60;
     d1->addData(p12);
+    d1->setMean(Tools::averageMulDim(*d1));
+    d1->setVar(Tools::varianceMulDim(*d1,d1->getMean()));
+    for(int i = 0; i<1000; i++){
+        d1->addSample(Tools::generateMulDim(d1->getMean(),d1->getVar()));
+    }
 
     Point p21(4);
     p21[0] = 0;
@@ -118,6 +123,11 @@ StateBox::StateBox(ImageScene *_scene):
     p22[2] = 100;
     p22[3] = 60;
     d2->addData(p22);
+    d2->setMean(Tools::averageMulDim(*d2));
+    d2->setVar(Tools::varianceMulDim(*d2,d2->getMean()));
+    for(int i = 0; i<1000; i++){
+        d2->addSample(Tools::generateMulDim(d2->getMean(),d2->getVar()));
+    }
 
     Point p31(4);
     p31[0] = 0;
@@ -131,6 +141,11 @@ StateBox::StateBox(ImageScene *_scene):
     p32[2] = 100;
     p32[3] = 60;
     d3->addData(p32);
+    d3->setMean(Tools::averageMulDim(*d3));
+    d3->setVar(Tools::varianceMulDim(*d3,d3->getMean()));
+    for(int i = 0; i<1000; i++){
+        d3->addSample(Tools::generateMulDim(d3->getMean(),d3->getVar()));
+    }
 
     Point p41(4);
     p41[0] = 100;
@@ -156,6 +171,11 @@ StateBox::StateBox(ImageScene *_scene):
     p44[2] = 400;
     p44[3] = 60;
     d4->addData(p44);
+    d4->setMean(Tools::averageMulDim(*d4));
+    d4->setVar(Tools::varianceMulDim(*d4,d4->getMean()));
+    for(int i = 0; i<1000; i++){
+        d4->addSample(Tools::generateMulDim(d4->getMean(),d4->getVar()));
+    }
 
     Point p51(4);
     p51[0] = 400;
@@ -169,6 +189,11 @@ StateBox::StateBox(ImageScene *_scene):
     p52[2] = 500;
     p52[3] = 50;
     d5->addData(p52);
+    d5->setMean(Tools::averageMulDim(*d5));
+    d5->setVar(Tools::varianceMulDim(*d5,d5->getMean()));
+    for(int i = 0; i<1000; i++){
+        d5->addSample(Tools::generateMulDim(d5->getMean(),d5->getVar()));
+    }
 
     Point p61(4);
     p61[0] = 400;
@@ -182,33 +207,25 @@ StateBox::StateBox(ImageScene *_scene):
     p62[2] = 500;
     p62[3] = 180;
     d6->addData(p62);
-
-    /*
-    points.setMean(Tools::averageMulDim(points));
-    points.setVar(Tools::varianceMulDim(points,points.getMean()));
+    d6->setMean(Tools::averageMulDim(*d6));
+    d6->setVar(Tools::varianceMulDim(*d6,d6->getMean()));
     for(int i = 0; i<1000; i++){
-        points.addSample(Tools::generateMulDim(points.getMean(),points.getVar()));
+        d6->addSample(Tools::generateMulDim(d6->getMean(),d6->getVar()));
     }
-    */
-    cerr << "DEBUT" << endl;
+
     Tree<Data>** x = new Tree<Data>*[3];
     x[0] = new Tree<Data>(d1);
     x[1] = new Tree<Data>(d2);
     x[2] = new Tree<Data>(d3);
-    cerr << "SETCHILDREN 1" << endl;
     t.setChildren(x,3);
     x = new Tree<Data>*[1];
     x[0] = new Tree<Data>(d4);
-    cerr << "SETCHILDREN 21" << endl;
     t[0]->setChildren(x,1);
-    cerr << "SETCHILDREN 22" << endl;
     t[1]->setChildren(x,1);
-    cerr << "SETCHILDREN 23" << endl;
     t[2]->setChildren(x,1);
     x = new Tree<Data>*[2];
     x[0] = new Tree<Data>(d5);
     x[1] = new Tree<Data>(d6);
-    cerr << "SETCHILDREN 3" << endl;
     (*t[0])[0]->setChildren(x,2);
 
     _outterborderPen.setWidth(2);
@@ -351,7 +368,7 @@ void StateBox::adjustSize(int x, int y)
         }
       }
       //Call CAIR
-      CAIR_Data(&source, &source_weights, newWidth, conv, ener, t, points);
+      CAIR_Data(&source, &source_weights, newWidth, conv, ener, t);
 //      if( !_resizeWidget.hdCheckBox->isChecked() )
 //      {
 //        CAIR( &source, &source_weights, newWidth, newHeight, conv, ener, &dest_weights, &dest, updateCallbackStateBox );
@@ -367,7 +384,7 @@ void StateBox::adjustSize(int x, int y)
       delete _img;
       _img = new QImage(QSize(newWidth,newHeight),QImage::Format_RGB32);
       _img->fill(0);
-      drawImagefromData(points,_img);
+      drawImagefromData(t,_img);
 //      _img = new QImage(CMLtoQImage(dest));
       //_imgItem->setPixmap(QPixmap::fromImage(*_img));
       update();

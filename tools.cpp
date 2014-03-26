@@ -124,6 +124,9 @@ double Tools::generateGaussian(double mean, double variance){
 }
 
 Point Tools::generateMulDim(Point mean, double **variance){
+    if(variance == NULL){
+        cerr << "Matrice de variance NULLE" << endl;
+    }
     int dim = mean.getSize();
     double **A = cholesky(variance,dim);
     //x suit une loi N(0,I)

@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <iostream>
 #include <stdlib.h>
+#include <vector>
 
 template<class T>
 class Tree{
@@ -12,6 +13,7 @@ private:
     T* value; //pointeur sur ce que contient un noeud
     Tree** children; //tableau de pointeurs des enfants de ce noeud
     int childrenSize;
+    std::vector<T*> recentData;
 
 public:
     Tree() : isLeaf(true), value(), children(NULL), childrenSize(0){}
@@ -24,6 +26,10 @@ public:
     bool getIsLeaf();
     void setChildren(Tree** c, int size);
     int getChildrenSize();
+    void addRecentData(T data);
+    void eraseRecentData(int pos);
+    T* getRecentData(int i);
+    int getRecentSize();
     Tree<T>* operator[](int ind);
     template<class S>
     friend std::ostream& operator<<(std::ostream& out, const Tree<S>& t);
@@ -39,14 +45,24 @@ Tree<T>::Tree(T* v){
 }
 
 template<class T>
+Tree<T>::Tree(const Tree& t){
+    isLeaf = t.isLeaf;
+    value = new T(*(t.value));
+    childrenSize = t.childrenSize;
+    children = new Tree<T>*[childrenSize];
+    for(int i = 0; i<childrenSize; i++){
+        children = new Tree(*(t.children[i]));
+    }
+    recentData = t.recentData;
+}
+
+template<class T>
 Tree<T>::~Tree(){
     std::cout << "destruction d'arbre, value : " << *value << std::endl;
     delete value;
     if(!isLeaf){
         for(int i = 0; i<childrenSize; i++){
-//            children[i]->~Tree();
             delete(children[i]);
-//            free(children[i]);
         }
         delete[] children;
     }
@@ -87,6 +103,26 @@ void Tree<T>::setChildren(Tree<T>** c, int size){
 template<class T>
 int Tree<T>::getChildrenSize(){
     return childrenSize;
+}
+
+template<class T>
+void Tree<T>::addRecentData(T data){
+    recentData.push_back(data);
+}
+
+template<class T>
+void Tree<T>::eraseRecentData(int pos){
+    recentData.erase(recentData.begin()+pos);
+}
+
+template<class T>
+T* Tree<T>::getRecentData(int i){
+    return recentData[i];
+}
+
+template<class T>
+int Tree<T>::getRecentSize(){
+    return recentData.size();
 }
 
 template<class T>

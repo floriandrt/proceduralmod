@@ -37,6 +37,13 @@ ostream& operator<<( ostream &flux, Point const& p ){
     return flux;
 }
 
+double Point::operator[](int i) const{
+    if(i<0 || i>=n){
+        cerr << "Index not in the range : " << i << ", limite : " << n << endl;
+    }
+    return data[i];
+}
+
 double& Point::operator[](int i){
     if(i<0 || i>=n){
         cerr << "Index not in the range : " << i << ", limite : " << n << endl;

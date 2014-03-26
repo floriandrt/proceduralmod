@@ -14,6 +14,7 @@ class Point{
         ~Point();
         int getSize() const;
         friend std::ostream& operator<<( std::ostream &flux, Point const& p );
+        double operator [](int i) const;
         double& operator [](int i);
         Point& operator =(Point const& p);
         Point operator+(Point const& p);
