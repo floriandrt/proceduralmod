@@ -1174,10 +1174,14 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
         CML_image_ptr Image_Ptr(1,1);
         Init_CML_Image(Source, S_Weights, &Image, &Image_Ptr);
         int* min = findMinPath(&Image_Ptr, conv, ener);
+        for(int i = 0; i<Image_Ptr.Height(); i++){
+            cerr << min[i] << ", " << i << endl;
+        }
         Point seg2(4);
         double** inter = new double*();
         int index;
         for(int i = 0; i+1<Image_Ptr.Height(); i++){
+            d = NULL;
             seg2[0] = min[i];
             seg2[1] = i;
             seg2[2] = min[i+1];

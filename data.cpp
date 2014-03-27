@@ -125,9 +125,7 @@ void Data::insertData4D(Point newData, int pos, int ind){
         posInsert = ind+1;
 
     }
-    if(data.size() < 20){
-        cerr << *this << endl;
-    }
+    //cerr << *this << endl;
 }
 
 int Data::getDataSize() const{

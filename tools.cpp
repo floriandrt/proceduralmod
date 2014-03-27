@@ -90,7 +90,7 @@ double** Tools::varianceMulDim(Data& d, Point mean){
             for(int k = 0; k<d.getDataSize(); k++){
                 res[i][j] += (d[k][i]-mean[i])*(d[k][j]-mean[j]);
             }
-            res[i][j] /= d.getDataSize();
+            res[i][j] /= (d.getDataSize()-1);
         }
     }
     return res;
@@ -128,7 +128,25 @@ Point Tools::generateMulDim(Point mean, double **variance){
         cerr << "Matrice de variance NULLE" << endl;
     }
     int dim = mean.getSize();
+    for(int i = 0; i<dim; i++){
+        variance[i][i] += 0.5;
+    }
     double **A = cholesky(variance,dim);
+    /*
+    for(int i = 0; i<dim; i++){
+        for(int j = 0; j<dim; j++){
+            cerr << " | " << A[i][j];
+        }
+        cerr << endl;
+    }
+    cerr << endl;
+    for(int i = 0; i<dim; i++){
+        for(int j = 0; j<dim; j++){
+            cerr << " | " << variance[i][j];
+        }
+        cerr << endl;
+    }
+    */
     //x suit une loi N(0,I)
     Point x(dim);
     //y suit une loi N(mean,variance)
