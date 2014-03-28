@@ -1080,34 +1080,55 @@ int* findMinPath(CML_image_ptr * Source_ptr, CAIR_convolution conv, CAIR_energy 
     return Min_Path;
 }
 
+double max(double a, double b){
+    if(a > b){
+        return a;
+    }
+    return b;
+}
+
 //prérequis segX[0] < segX[2]
 double* intersection(Point seg1, Point seg2){
-    //cerr << "INTERSECTION ENTREE" << endl;
+    cerr << "INTERSECTION ENTREE" << endl;
+    cerr << "seg1 x1 " << seg1[0] << ", seg1 y1 " << seg1[1] << ", seg1 x2 " << seg1[2] << ", seg1 y2 " << seg1[3] << endl;
+    cerr << "seg2 x1 " << seg2[0] << ", seg2 y1 " << seg2[1] << ", seg2 x2 " << seg2[2] << ", seg2 y2 " << seg2[3] << endl;
     double a1 = 0;
+    double b1;
     if(seg1[0] != seg1[2]){
         a1 = seg1[1]-seg1[3];
         a1 /= seg1[0]-seg1[2];
+        b1 = seg1[1]-(a1*seg1[0]);
+    }else{
+        b1 = seg1[0];
     }
+    cerr << "a1 " << a1 << ", b1 " << b1 << endl;
     double a2 = 0;
+    double b2;
     if(seg2[0] != seg2[2]){
         a2 = seg2[1]-seg2[3];
         a2 /= seg2[0]-seg2[2];
+        b2 = seg2[1]-(a2*seg2[0]);
+    }else{
+        b2 = seg2[0];
     }
-    double b1 = seg1[2]-(a1*seg1[0]);
-    double b2 = seg2[2]-(a2*seg2[0]);
+    cerr << "a2 " << a2 << ", b2 " << b2 << endl;
     if(a2 == a1){
-        //cerr << "INTERSECTION SORTIE NOT FIND" << endl;
+        cerr << "INTERSECTION SORTIE NOT FIND: PARALLELE" << endl;
         return new double[2]{-1,-1};
     }
     double resX = b1-b2;
     resX /= a2-a1;
     double resY = a1*resX+b1;
-    if(resX < seg1[0] || resX > seg1[2]){
-        //cerr << "INTERSECTION SORTIE NOT FIND" << endl;
-        return new double[2]{-1,-1};
+    double limMin1 = min(seg1[0],seg1[2]);
+    double limMin2 = min(seg2[0],seg2[2]);
+    double limMax1 = max(seg1[0],seg1[2]);
+    double limMax2 = max(seg2[0],seg2[2]);
+    if(resX <= limMax2 && resX >= limMin2 && resX <= limMax1 && resX >= limMin1){
+        cerr << "INTERSECTION SORTIE FIND" << " resX " << resX << ", resY " << resY << endl;
+        return new double[2]{resX, resY};
     }
-    //cerr << "INTERSECTION SORTIE FIND" << endl;
-    return new double[2]{resX, resY};
+    cerr << "INTERSECTION SORTIE NOT FIND: HORS DES SEGS" << endl;
+    return new double[2]{-1,-1};
 }
 
 Data* findData(Tree<Data>* t, Point seg2, double** inter, int& index){
@@ -1115,12 +1136,14 @@ Data* findData(Tree<Data>* t, Point seg2, double** inter, int& index){
     Data* d = t->getValue();
     if(d != NULL && seg2[0] >= d->xMin() && seg2[1] >= d->yMin() && seg2[2] <= d->xMax() && seg2[3] <= d->yMax()){
         for(int i = 0; i<d->getDataSize(); i++){
-            *inter = intersection((*d)[i], seg2);
-            if((*inter[0]) != -1){
-                index = i;
-                cerr << "FIND DATA SORTIE NON NULL non rec "  << (*inter)[0] << ", " << (*inter)[1] << endl;
-                return d;
-            }
+            //if(seg2[0] <= (*d)[i][2] && seg2[2] >= (*d)[i][0] && seg2[1] <= (*d)[i][3] && seg2[3] >= (*d)[i][1]){
+                *inter = intersection((*d)[i], seg2);
+                if((*inter[0]) != -1){
+                    index = i;
+                    cerr << "FIND DATA SORTIE NON NULL non rec "  << (*inter)[0] << ", " << (*inter)[1] << endl;
+                    return d;
+                }
+            //}
         }
     }
     for(int i = 0; i<t->getChildrenSize(); i++){
@@ -1174,13 +1197,14 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
         CML_image_ptr Image_Ptr(1,1);
         Init_CML_Image(Source, S_Weights, &Image, &Image_Ptr);
         int* min = findMinPath(&Image_Ptr, conv, ener);
-        for(int i = 0; i<Image_Ptr.Height(); i++){
-            cerr << min[i] << ", " << i << endl;
-        }
         Point seg2(4);
         double** inter = new double*();
         int index;
+        vector<Data*> match;
+        vector<double> interMatch;
+        vector<int> indexMatch;
         for(int i = 0; i+1<Image_Ptr.Height(); i++){
+            cerr << "PIXEL " << min[i] << ", " << i << endl;
             d = NULL;
             seg2[0] = min[i];
             seg2[1] = i;
@@ -1189,8 +1213,9 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
             d = findData(&t, seg2, inter, index);
             if(d != NULL){
                 if(delta > 0){
-                    cerr << "inter 0 " << (*inter)[0] << endl;
-                    d->insertData4D(Tools::generateY(d->getMean(),d->getVar(),(*inter)[0],(*inter)[0]+delta-1), (*inter)[0], index);
+                    match.push_back(d);
+                    interMatch.push_back((*inter)[0]);
+                    indexMatch.push_back(index);
                 }else if(delta < 0){
                     delta = d->reduceData(delta,index);
                     if(delta != 0){
@@ -1207,7 +1232,10 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
                 //cerr << "D NULL" << endl;
             }
         }
-
+        for(int i = 0; i<(int)match.size(); i++){
+            d = match[i];
+            d->insertData4D(Tools::generateY(d->getMean(),d->getVar(),interMatch[i], interMatch[i]+delta-1),interMatch[i],indexMatch[i]);
+        }
         delete[] min;
         delete[] inter;
         Shutdown_Threads();
