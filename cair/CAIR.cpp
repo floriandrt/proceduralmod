@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include "../tools.h"
+#include <cfloat>
 
 using namespace std;
 
@@ -1089,49 +1090,66 @@ double max(double a, double b){
 
 //prérequis segX[0] < segX[2]
 double* intersection(Point seg1, Point seg2){
+    /*
     cerr << "INTERSECTION ENTREE" << endl;
     cerr << "seg1 x1 " << seg1[0] << ", seg1 y1 " << seg1[1] << ", seg1 x2 " << seg1[2] << ", seg1 y2 " << seg1[3] << endl;
     cerr << "seg2 x1 " << seg2[0] << ", seg2 y1 " << seg2[1] << ", seg2 x2 " << seg2[2] << ", seg2 y2 " << seg2[3] << endl;
-    double a1 = 0;
+    */
+    double a1;
     double b1;
+    double resX;
+    double resY;
     if(seg1[0] != seg1[2]){
         a1 = seg1[1]-seg1[3];
         a1 /= seg1[0]-seg1[2];
         b1 = seg1[1]-(a1*seg1[0]);
     }else{
+        a1 = DBL_MAX;
         b1 = seg1[0];
+        resX = seg1[0];
     }
-    cerr << "a1 " << a1 << ", b1 " << b1 << endl;
-    double a2 = 0;
+    //cerr << "a1 " << a1 << ", b1 " << b1 << endl;
+    double a2;
     double b2;
     if(seg2[0] != seg2[2]){
         a2 = seg2[1]-seg2[3];
         a2 /= seg2[0]-seg2[2];
         b2 = seg2[1]-(a2*seg2[0]);
     }else{
+        a2 = DBL_MAX;
         b2 = seg2[0];
+        resX = seg2[0];
     }
-    cerr << "a2 " << a2 << ", b2 " << b2 << endl;
+    //cerr << "a2 " << a2 << ", b2 " << b2 << endl;
     if(a2 == a1){
-        cerr << "INTERSECTION SORTIE NOT FIND: PARALLELE" << endl;
+        //cerr << "INTERSECTION SORTIE NOT FIND: PARALLELE" << endl;
         return new double[2]{-1,-1};
     }
-    double resX = b1-b2;
-    resX /= a2-a1;
-    double resY = a1*resX+b1;
-    double limMin1 = min(seg1[0],seg1[2]);
-    double limMin2 = min(seg2[0],seg2[2]);
-    double limMax1 = max(seg1[0],seg1[2]);
-    double limMax2 = max(seg2[0],seg2[2]);
-    if(resX <= limMax2 && resX >= limMin2 && resX <= limMax1 && resX >= limMin1){
-        cerr << "INTERSECTION SORTIE FIND" << " resX " << resX << ", resY " << resY << endl;
+    //voir cas perpendiculaire (pente nulle et pente verticale)
+    if(a1 != DBL_MAX && a2 != DBL_MAX){
+        resX = b1-b2;
+        resX /= a2-a1;
+        resY = a1*resX+b1;
+    }else{
+        if(a1 == DBL_MAX){
+            resY = a2*resX+b2;
+        }else{
+            resY = a1*resX+b1;
+        }
+    }
+    double limMinX = max(min(seg1[0],seg1[2]),min(seg2[0],seg2[2]));
+    double limMaxX = min(max(seg1[0],seg1[2]),max(seg2[0],seg2[2]));
+    double limMinY = max(min(seg1[1],seg1[3]),min(seg2[1],seg2[3]));
+    double limMaxY = min(max(seg1[1],seg1[3]),max(seg2[1],seg2[3]));
+    if(resX <= limMaxX && resX >= limMinX && resY <= limMaxY && resY >= limMinY){
+        //cerr << "INTERSECTION SORTIE FIND" << " resX " << resX << ", resY " << resY << endl;
         return new double[2]{resX, resY};
     }
-    cerr << "INTERSECTION SORTIE NOT FIND: HORS DES SEGS" << endl;
+    //cerr << "INTERSECTION SORTIE NOT FIND: HORS DES SEGS" << " resX " << resX << ", resY " << resY << endl;
     return new double[2]{-1,-1};
 }
 
-Data* findData(Tree<Data>* t, Point seg2, double** inter, int& index){
+Data* findData(Tree<Data>* t, Tree<Data>* root, Point seg2, double** inter, int& index, Tree<Data>* parent, vector<Tree<Data>*>& parents){
     //cerr << "FIND DATA ENTREE" << endl;
     Data* d = t->getValue();
     if(d != NULL && seg2[0] >= d->xMin() && seg2[1] >= d->yMin() && seg2[2] <= d->xMax() && seg2[3] <= d->yMax()){
@@ -1140,16 +1158,20 @@ Data* findData(Tree<Data>* t, Point seg2, double** inter, int& index){
                 *inter = intersection((*d)[i], seg2);
                 if((*inter[0]) != -1){
                     index = i;
-                    cerr << "FIND DATA SORTIE NON NULL non rec "  << (*inter)[0] << ", " << (*inter)[1] << endl;
+                    if(i == 0){
+                        parents.push_back(parent);
+                    }
+                    root->addRecentDataTree(t);
+                    //cerr << "FIND DATA SORTIE NON NULL non rec "  << (*inter)[0] << ", " << (*inter)[1] << endl;
                     return d;
                 }
             //}
         }
     }
     for(int i = 0; i<t->getChildrenSize(); i++){
-        d = findData((*t)[i], seg2, inter, index);
+        d = findData((*t)[i], root, seg2, inter, index, t, parents);
         if(d != NULL){
-            cerr << "FIND DATA SORTIE NON NULL rec" << endl;
+            //cerr << "FIND DATA SORTIE NON NULL rec" << endl;
             return d;
         }
     }
@@ -1157,41 +1179,57 @@ Data* findData(Tree<Data>* t, Point seg2, double** inter, int& index){
     return NULL;
 }
 
+void moveData(Tree<Data>& t, int delta){
+    Data* temp;
+    cerr << "MOVE DATA" << endl;
+    for(int i = 0; i<t.getChildrenSize(); i++){
+        temp = t[i]->getValue();
+        for(int k = 0; k<temp->getDataSize(); k++){
+            (*temp)[k][0] += delta;
+            (*temp)[k][2] += delta;
+        }
+        moveData(*(t[i]),delta);
+    }
+}
+
 void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolution conv, CAIR_energy ener, Tree<Data>& t){
     cerr << "CAIR DATA ENTREE" << endl;
 
     int delta = goal_x - (*Source).Width();
     Data* d;
+    Tree<Data>* tTemp;
+    int recentSize = t.getRecentTreeSize();
 
-    if(t.getRecentSize() != 0){
-        for(int i = 0; i<t.getRecentSize(); i++){
-            d = t.getRecentData(i);
-            int pos = d->getPosInsert();
-            if(delta < 0){
-                int ecart = (*d)[pos][2] - (*d)[pos][0];
-                if(delta+ecart <= 0){
-                    d->eraseData();
-                }else{
-                    for(int j = pos+1; j<d->getDataSize(); j++){
-                        (*d)[j][0] += delta;
-                        (*d)[j][2] += delta;
-                    }
-                    (*d)[pos][2] += delta;
+    for(int i = 0; i<recentSize; i++){
+        tTemp = t.getRecentDataTree(i);
+        //cette fonction se lance trop de fois ...
+        moveData(*tTemp,delta);
+        d = tTemp->getValue();
+        int pos = d->getPosInsert();
+        if(delta < 0){
+            int ecart = (*d)[pos][2] - (*d)[pos][0];
+            if(delta+ecart <= 0){
+                d->eraseData();
+            }else{
+                for(int j = pos+1; j<d->getDataSize(); j++){
+                    (*d)[j][0] += delta;
+                    (*d)[j][2] += delta;
                 }
-            }
-            if(delta > 0){
                 (*d)[pos][2] += delta;
-                for(int k = pos+1; k<d->getDataSize(); k++){
-                    (*d)[k][0] += delta;
-                    (*d)[k][2] += delta;
-                }
-                if(Tools::isGaussian((*d)[pos],d->getMean(),d->getVar(),d->getSample())){
-                    t.eraseRecentData(i);
-                }
+            }
+        }else if(delta > 0){
+            (*d)[pos][2] += delta;
+            for(int k = pos+1; k<d->getDataSize(); k++){
+                (*d)[k][0] += delta;
+                (*d)[k][2] += delta;
+            }
+            if(Tools::isGaussian((*d)[pos],d->getMean(),d->getVar(),d->getSample())){
+                t.eraseRecentDataTree(i);
             }
         }
+    }
 
-    }else{
+    if(recentSize == 0){
         Startup_Threads();
         CML_image Image(1,1);
         CML_image_ptr Image_Ptr(1,1);
@@ -1203,16 +1241,18 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
         vector<Data*> match;
         vector<double> interMatch;
         vector<int> indexMatch;
+        vector<Tree<Data>*> parents;
         for(int i = 0; i+1<Image_Ptr.Height(); i++){
-            cerr << "PIXEL " << min[i] << ", " << i << endl;
+            //cerr << "PIXEL " << min[i] << ", " << i << endl;
             d = NULL;
             seg2[0] = min[i];
             seg2[1] = i;
             seg2[2] = min[i+1];
             seg2[3] = i+1;
-            d = findData(&t, seg2, inter, index);
+            d = findData(&t, &t, seg2, inter, index, &t, parents);
             if(d != NULL){
                 if(delta > 0){
+                    i++;
                     match.push_back(d);
                     interMatch.push_back((*inter)[0]);
                     indexMatch.push_back(index);
@@ -1232,9 +1272,22 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
                 //cerr << "D NULL" << endl;
             }
         }
+        Data* dParent;
+        Point gen;
         for(int i = 0; i<(int)match.size(); i++){
             d = match[i];
-            d->insertData4D(Tools::generateY(d->getMean(),d->getVar(),interMatch[i], interMatch[i]+delta-1),interMatch[i],indexMatch[i]);
+            gen = Tools::generateY(d->getMean(),d->getVar(),interMatch[i], interMatch[i]+delta-1);
+            d->insertData4D(gen,interMatch[i],indexMatch[i]);
+            if((*d)[indexMatch[i]][0] == (int)interMatch[i]){
+                //difficile à tester donc on suppose que ça marche ... pour le moment donc à vérifier en cas de problème inconnu
+                for(int k = 0; k<parents.size(); k++){
+                    dParent = (parents[k])->getValue();
+                    if(dParent != NULL){
+                        cerr << "DECALAGE PARENT" << endl;
+                        (*dParent)[dParent->getDataSize()-1][3] = gen[3];
+                    }
+                }
+            }
         }
         delete[] min;
         delete[] inter;

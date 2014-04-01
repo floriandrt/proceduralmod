@@ -14,6 +14,7 @@ private:
     Tree** children; //tableau de pointeurs des enfants de ce noeud
     int childrenSize;
     std::vector<T*> recentData;
+    std::vector<Tree<T>*> recentDataTree;
 
 public:
     Tree() : isLeaf(true), value(), children(NULL), childrenSize(0){}
@@ -26,9 +27,13 @@ public:
     bool getIsLeaf();
     void setChildren(Tree** c, int size);
     int getChildrenSize();
-    void addRecentData(T data);
+    void addRecentData(T *data);
+    void addRecentDataTree(Tree<T>* t);
     void eraseRecentData(int pos);
+    void eraseRecentDataTree(int pos);
     T* getRecentData(int i);
+    int getRecentTreeSize();
+    Tree<T>* getRecentDataTree(int i);
     int getRecentSize();
     Tree<T>* operator[](int ind);
     template<class S>
@@ -106,8 +111,13 @@ int Tree<T>::getChildrenSize(){
 }
 
 template<class T>
-void Tree<T>::addRecentData(T data){
+void Tree<T>::addRecentData(T* data){
     recentData.push_back(data);
+}
+
+template<class T>
+void Tree<T>::addRecentDataTree(Tree<T>* t){
+    recentDataTree.push_back(t);
 }
 
 template<class T>
@@ -116,13 +126,28 @@ void Tree<T>::eraseRecentData(int pos){
 }
 
 template<class T>
+void Tree<T>::eraseRecentDataTree(int pos){
+    recentDataTree.erase(recentDataTree.begin()+pos);
+}
+
+template<class T>
 T* Tree<T>::getRecentData(int i){
     return recentData[i];
 }
 
 template<class T>
+Tree<T>* Tree<T>::getRecentDataTree(int i){
+    return recentDataTree[i];
+}
+
+template<class T>
 int Tree<T>::getRecentSize(){
     return recentData.size();
+}
+
+template<class T>
+int Tree<T>::getRecentTreeSize(){
+    return recentDataTree.size();
 }
 
 template<class T>
