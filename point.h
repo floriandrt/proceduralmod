@@ -27,6 +27,7 @@ class Point{
         Point& operator -=(int val);
         Point& operator /=(Point const& p);
         Point& operator *=(Point const& p);
+        bool operator !=(Point const& p);
         bool operator <(Point const& p);
         bool operator >(Point const& p);
 };

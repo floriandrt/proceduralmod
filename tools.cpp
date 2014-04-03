@@ -178,8 +178,9 @@ Point Tools::rejet(Point min, Point max, Point mean, double** variance, int limi
 
 Point Tools::rejet(Point mean, double** variance, vector<Point> sample){
     Point test = generateMulDim(mean, variance);
+    int threshold = 50;
     for(uint i = 0; i<sample.size(); i++){
-        if(test < (sample[i]+1) && test > (sample[i]-1)){
+        if(test < (sample[i]+threshold) && test > (sample[i]-threshold)){
             return test;
         }
     }
@@ -187,12 +188,12 @@ Point Tools::rejet(Point mean, double** variance, vector<Point> sample){
 }
 
 bool Tools::isGaussian(Point x, Point mean, double** var, vector<Point> sample){
-    Point min(x.getSize());
-    Point max(x.getSize());
+//    Point min(x.getSize());
+//    Point max(x.getSize());
 //    min -= 30;
 //    max += 30;
 //    Point res = rejet(min, max, mean, var, 100000);
     Point res = rejet(mean,var,sample);
-
+    cerr << "isGaussian res " << (res.getSize() == 0) << endl;
     return !(res.getSize() == 0);
 }

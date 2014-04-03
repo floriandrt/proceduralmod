@@ -11,13 +11,13 @@ class Tree{
 private:
     bool isLeaf; //vrai si c'est une feuille
     T* value; //pointeur sur ce que contient un noeud
-    Tree** children; //tableau de pointeurs des enfants de ce noeud
-    int childrenSize;
+    std::vector<Tree*> children; //tableau de pointeurs des enfants de ce noeud
+    std::vector<Tree*> parents; //tableau de pointeurs des parents de ce noeud
     std::vector<T*> recentData;
     std::vector<Tree<T>*> recentDataTree;
 
 public:
-    Tree() : isLeaf(true), value(), children(NULL), childrenSize(0){}
+    Tree() : isLeaf(true), value(NULL){}
     Tree(T* v);
     Tree(const Tree& t);
     ~Tree();
@@ -25,40 +25,38 @@ public:
     T* getValue();
     void setIsLeaf(bool b);
     bool getIsLeaf();
-    void setChildren(Tree** c, int size);
+    void addParent(Tree<T>* p);
+    int getParentSize();
+    void addChild(Tree<T>* c);
     int getChildrenSize();
     void addRecentData(T *data);
     void addRecentDataTree(Tree<T>* t);
     void eraseRecentData(int pos);
-    void eraseRecentDataTree(int pos);
+    void eraseRecentDataTree(Tree<T>* t);
     T* getRecentData(int i);
     int getRecentTreeSize();
     Tree<T>* getRecentDataTree(int i);
     int getRecentSize();
+    bool notInRecentTree(Tree<T>* t);
     Tree<T>* operator[](int ind);
     template<class S>
     friend std::ostream& operator<<(std::ostream& out, const Tree<S>& t);
-    //void next(); //parcourt les enfants
 };
 
 template<class T>
 Tree<T>::Tree(T* v){
     isLeaf = true;
     value = v;
-    children = NULL;
-    childrenSize = 0;
 }
 
 template<class T>
 Tree<T>::Tree(const Tree& t){
     isLeaf = t.isLeaf;
     value = new T(*(t.value));
-    childrenSize = t.childrenSize;
-    children = new Tree<T>*[childrenSize];
-    for(int i = 0; i<childrenSize; i++){
-        children = new Tree(*(t.children[i]));
-    }
+    children = t.children;
+    parents = t.parents;
     recentData = t.recentData;
+    recentDataTree = t.recentDataTree;
 }
 
 template<class T>
@@ -66,10 +64,9 @@ Tree<T>::~Tree(){
     std::cout << "destruction d'arbre, value : " << *value << std::endl;
     delete value;
     if(!isLeaf){
-        for(int i = 0; i<childrenSize; i++){
+        for(int i = 0; i<(int)children.size(); i++){
             delete(children[i]);
         }
-        delete[] children;
     }
 }
 
@@ -95,19 +92,30 @@ bool Tree<T>::getIsLeaf(){
 }
 
 template<class T>
-void Tree<T>::setChildren(Tree<T>** c, int size){
-    for(int i = 0; i<childrenSize; i++){
-        delete children[i];
+void Tree<T>::addParent(Tree<T>* p){
+    for(int i = 0; i<(int)parents.size(); i++){
+        if(parents[i] == p){
+            return;
+        }
     }
-    delete[] children;
-    children = c;
-    childrenSize = size;
+    parents.push_back(p);
+}
+
+template<class T>
+int Tree<T>::getParentSize(){
+    return parents.size();
+}
+
+template<class T>
+void Tree<T>::addChild(Tree<T>* c){
+    children.push_back(c);
+    children[children.size()-1]->addParent(this);
     isLeaf = false;
 }
 
 template<class T>
 int Tree<T>::getChildrenSize(){
-    return childrenSize;
+    return children.size();
 }
 
 template<class T>
@@ -126,8 +134,12 @@ void Tree<T>::eraseRecentData(int pos){
 }
 
 template<class T>
-void Tree<T>::eraseRecentDataTree(int pos){
-    recentDataTree.erase(recentDataTree.begin()+pos);
+void Tree<T>::eraseRecentDataTree(Tree<T>* t){
+    for(int i = 0; i<(int)recentDataTree.size(); i++){
+        if(t == recentDataTree[i]){
+            recentDataTree.erase(recentDataTree.begin()+i);
+        }
+    }
 }
 
 template<class T>
@@ -151,8 +163,18 @@ int Tree<T>::getRecentTreeSize(){
 }
 
 template<class T>
+bool Tree<T>::notInRecentTree(Tree<T>* t){
+    for(int i = 0; i<(int)recentDataTree.size(); i++){
+        if(recentDataTree[i] == t){
+            return false;
+        }
+    }
+    return true;
+}
+
+template<class T>
 Tree<T>* Tree<T>::operator[](int ind){
-    if(ind < 0 || ind >= childrenSize){
+    if(ind < 0 || ind >= (int)children.size()){
         std::cerr << "Indice d'enfant qui ne convient pas" << std::endl;
     }
     return children[ind];

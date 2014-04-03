@@ -160,6 +160,18 @@ Point& Point::operator*=(Point const& p){
     return *this;
 }
 
+bool Point::operator !=(Point const& p){
+    if(n != p.n){
+        cerr << "comparaison de 2 points de différente dimension" << endl;
+    }
+    for(int i = 0; i<n; i++){
+        if(data[i] != p.data[i]){
+            return true;
+        }
+    }
+    return false;
+}
+
 bool Point::operator<(Point const& p){
     if(p.n != n){
         cerr << "Points are not the same size" << endl;
