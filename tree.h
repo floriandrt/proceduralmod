@@ -13,7 +13,6 @@ private:
     T* value; //pointeur sur ce que contient un noeud
     std::vector<Tree*> children; //tableau de pointeurs des enfants de ce noeud
     std::vector<Tree*> parents; //tableau de pointeurs des parents de ce noeud
-    std::vector<T*> recentData;
     std::vector<Tree<T>*> recentDataTree;
 
 public:
@@ -26,16 +25,15 @@ public:
     void setIsLeaf(bool b);
     bool getIsLeaf();
     void addParent(Tree<T>* p);
+    Tree<T>* getParent(int i);
     int getParentSize();
     void addChild(Tree<T>* c);
     int getChildrenSize();
-    void addRecentData(T *data);
     void addRecentDataTree(Tree<T>* t);
-    void eraseRecentData(int pos);
     void eraseRecentDataTree(Tree<T>* t);
-    T* getRecentData(int i);
     int getRecentTreeSize();
     Tree<T>* getRecentDataTree(int i);
+    std::vector<Tree<T>*>& getRecentVecTree();
     int getRecentSize();
     bool notInRecentTree(Tree<T>* t);
     Tree<T>* operator[](int ind);
@@ -55,7 +53,6 @@ Tree<T>::Tree(const Tree& t){
     value = new T(*(t.value));
     children = t.children;
     parents = t.parents;
-    recentData = t.recentData;
     recentDataTree = t.recentDataTree;
 }
 
@@ -102,6 +99,11 @@ void Tree<T>::addParent(Tree<T>* p){
 }
 
 template<class T>
+Tree<T>* Tree<T>::getParent(int i){
+    return parents[i];
+}
+
+template<class T>
 int Tree<T>::getParentSize(){
     return parents.size();
 }
@@ -119,32 +121,19 @@ int Tree<T>::getChildrenSize(){
 }
 
 template<class T>
-void Tree<T>::addRecentData(T* data){
-    recentData.push_back(data);
-}
-
-template<class T>
 void Tree<T>::addRecentDataTree(Tree<T>* t){
     recentDataTree.push_back(t);
 }
 
 template<class T>
-void Tree<T>::eraseRecentData(int pos){
-    recentData.erase(recentData.begin()+pos);
-}
-
-template<class T>
 void Tree<T>::eraseRecentDataTree(Tree<T>* t){
     for(int i = 0; i<(int)recentDataTree.size(); i++){
+        std::cerr << "ERASE RECENT t : " << t << ", recent i : " << recentDataTree[i] << std::endl;
         if(t == recentDataTree[i]){
             recentDataTree.erase(recentDataTree.begin()+i);
+            return;
         }
     }
-}
-
-template<class T>
-T* Tree<T>::getRecentData(int i){
-    return recentData[i];
 }
 
 template<class T>
@@ -153,8 +142,8 @@ Tree<T>* Tree<T>::getRecentDataTree(int i){
 }
 
 template<class T>
-int Tree<T>::getRecentSize(){
-    return recentData.size();
+std::vector<Tree<T>*>& Tree<T>::getRecentVecTree(){
+    return recentDataTree;
 }
 
 template<class T>

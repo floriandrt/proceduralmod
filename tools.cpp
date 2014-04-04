@@ -22,6 +22,9 @@ double** cholesky(double** A, int size){
     double sum;
     double prod = 0;
     for(int i = 0; i<size; i++){
+        A[i][i] += 0.5;
+    }
+    for(int i = 0; i<size; i++){
         sum = 0;
         L[i] = new double[size];
         for(int j = 0; j<size; j++){
@@ -35,6 +38,12 @@ double** cholesky(double** A, int size){
                 sum += pow(L[i][j],2);
             }else if(i == j){
                 L[i][i] = sqrt(A[i][i]-sum);
+                if(abs(L[i][i]) < 0.0000001){
+                    for(int i = 0; i<size; i++){
+                        A[i][i] += 0.5;
+                    }
+                    return cholesky(A,size);
+                }
             }else{
                 L[i][j] = 0;
             }
@@ -128,9 +137,6 @@ Point Tools::generateMulDim(Point mean, double **variance){
         cerr << "Matrice de variance NULLE" << endl;
     }
     int dim = mean.getSize();
-    for(int i = 0; i<dim; i++){
-        variance[i][i] += 0.5;
-    }
     double **A = cholesky(variance,dim);
     /*
     for(int i = 0; i<dim; i++){
@@ -178,7 +184,7 @@ Point Tools::rejet(Point min, Point max, Point mean, double** variance, int limi
 
 Point Tools::rejet(Point mean, double** variance, vector<Point> sample){
     Point test = generateMulDim(mean, variance);
-    int threshold = 50;
+    int threshold = 10;
     for(uint i = 0; i<sample.size(); i++){
         if(test < (sample[i]+threshold) && test > (sample[i]-threshold)){
             return test;
@@ -194,6 +200,5 @@ bool Tools::isGaussian(Point x, Point mean, double** var, vector<Point> sample){
 //    max += 30;
 //    Point res = rejet(min, max, mean, var, 100000);
     Point res = rejet(mean,var,sample);
-    cerr << "isGaussian res " << (res.getSize() == 0) << endl;
     return !(res.getSize() == 0);
 }

@@ -176,6 +176,24 @@ int Data::yMax(){
     return maxY;
 }
 
+void Data::updateX(double newX){
+    minX = (newX < minX) ? newX : minX;
+    maxX = (newX > maxX) ? newX : maxX;
+}
+
+void Data::updateY(double newY){
+    minY = (newY < minY) ? newY : minY;
+    maxY = (newY > maxY) ? newY : maxY;
+}
+
+void Data::shiftMinX(double delta){
+    minX += delta;
+}
+
+void Data::shiftMaxX(double delta){
+    maxX += delta;
+}
+
 bool Data::has(int x, int y){
     cout << "ENTREE HAS, data size : " << (int)data.size() << endl;
     double a, b;

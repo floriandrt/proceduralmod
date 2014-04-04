@@ -38,6 +38,10 @@ class Data{
         int xMax();
         int yMin();
         int yMax();
+        void updateX(double newX);
+        void updateY(double newY);
+        void shiftMinX(double delta);
+        void shiftMaxX(double delta);
         bool has(int x, int y);
         Point operator[](int i) const;
         Point& operator[](int i);

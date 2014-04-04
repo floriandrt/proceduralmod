@@ -1153,15 +1153,21 @@ void findData(Tree<Data>* t, Tree<Data>* root, Point seg2, vector<double>& inter
     //cerr << "FIND DATA ENTREE" << endl;
     double* inter;
     Data* d = t->getValue();
+    //if(d != NULL){
+        //cerr << "seg2 x0 " << seg2[0] << " seg2 y0 " << seg2[1] << " seg2 x1 " << seg2[2] << " seg2 y1 " << seg2[3] << endl;
+        //cerr << "x min " << d->xMin() << " x max " << d->xMax() << " y min " << d->yMin() << " y max " << d->yMax() << endl;
+    //}
     if(d != NULL && seg2[0] >= d->xMin() && seg2[1] >= d->yMin() && seg2[2] <= d->xMax() && seg2[3] <= d->yMax()){
         for(int i = 0; i<d->getDataSize(); i++){
             //if(seg2[0] <= (*d)[i][2] && seg2[2] >= (*d)[i][0] && seg2[1] <= (*d)[i][3] && seg2[3] >= (*d)[i][1]){
                 inter = intersection((*d)[i], seg2);
+                //cerr << "inter : " << inter[0] << ", " << inter[1] << endl;
                 if(inter[0] != -1 && root->notInRecentTree(t)){
                     interMatch.push_back(inter[0]);
                     indexMatch.push_back(i);
+                    cerr << "ADD IN RECENT TREE : " << t << endl;
                     root->addRecentDataTree(t);
-                    //cerr << "FIND DATA SORTIE NON NULL non rec "  << (*inter)[0] << ", " << (*inter)[1] << endl;
+                    cerr << "FIND DATA SORTIE NON NULL non rec " << endl;
                     return;
                 }
             //}
@@ -1174,37 +1180,89 @@ void findData(Tree<Data>* t, Tree<Data>* root, Point seg2, vector<double>& inter
     return;
 }
 
-void moveData(Tree<Data>* t, int delta){
-    Data* temp;
-    Data* parentData;
-    //cerr << "MOVE DATA ENTREE" << endl;
-    for(int i = 0; i<t->getChildrenSize(); i++){
-        temp = (*t)[i]->getValue();
-        parentData = t->getValue();
-        //cerr << "DECALAGE : " << (*temp)[0] << ", " << (*parentData)[parentData->getDataSize()-1] << endl;
-        if(((*temp)[0][0] != (*parentData)[parentData->getDataSize()-1][2]) || ((*temp)[0][1] != (*parentData)[parentData->getDataSize()-1][3])){
-            for(int k = 0; k<temp->getDataSize(); k++){
-                (*temp)[k][0] += delta;
-                (*temp)[k][2] += delta;
-            }
-        }
-        //cerr << "DECALAGE APRES: " << (*temp)[0] << ", " << (*parentData)[parentData->getDataSize()-1] << endl;
-        moveData((*t)[i],delta);
+void afficherVec(vector<Tree<Data>*> v){
+    for(int i = 0; i<(int)v.size(); i++){
+        cout << " | " << v[i];
     }
-    //cerr << "MOVE DATA SORTIE" << endl;
+    cout << endl;
 }
 
-void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolution conv, CAIR_energy ener, Tree<Data>& t){
-    cerr << "CAIR DATA ENTREE" << endl;
+template<class T>
+bool isInVector(vector<T> v, T val){
+    for(int i = 0; i<(int)v.size(); i++){
+       // cerr << "v[i] : " << v[i] << ", val : " << val << endl;
+        if(v[i] == val){
+            return true;
+        }
+    }
+    return false;
+}
 
-    int delta = goal_x - (*Source).Width();
+void moveTreeRecParent(Tree<Data>* t, vector<Tree<Data>*>& exploredTree, int delta){
+    cerr << "ENTREE MOVE PARENT REC" << endl;
+    Tree<Data>* parent;
+    Data* data;
+    for(int i = 0; i<t->getParentSize(); i++){
+        parent = t->getParent(i);
+        if(!isInVector(exploredTree, parent)){
+            data = parent->getValue();
+            if(data == NULL){
+                cerr << "PROBLEME" << endl;
+            }
+            for(int k = 0; k<data->getDataSize(); k++){
+                (*data)[k][0] += delta;
+                (*data)[k][2] += delta;
+            }
+            data->shiftMinX(delta);
+            data->shiftMaxX(delta);
+            exploredTree.push_back(parent);
+            moveTreeRecParent(parent, exploredTree, delta);
+        }
+    }
+    cerr << "SORTIE MOVE PARENT REC" << endl;
+}
+
+void moveTreeRecChild(Tree<Data>* t, vector<Tree<Data>*>& exploredTree, int delta){
+    cerr << "ENTREE MOVE CHILD REC" << endl;
+    Tree<Data>* child;
+    Data* data;
+    for(int i = 0; i<t->getChildrenSize(); i++){
+        child = (*t)[i];
+        if(!isInVector(exploredTree, child)){
+            data = child->getValue();
+            for(int k = 0; k<data->getDataSize(); k++){
+                (*data)[k][0] += delta;
+                (*data)[k][2] += delta;
+            }
+            data->shiftMinX(delta);
+            data->shiftMaxX(delta);
+            exploredTree.push_back(child);
+        }
+        moveTreeRecChild(child, exploredTree, delta);
+        moveTreeRecParent(child, exploredTree, delta);
+    }
+    cerr << "SORTIE MOVE CHILD REC" << endl;
+}
+
+void moveData(vector<Tree<Data>*> recentTree, int delta){
+    cerr << "ENTREE MOVE DATA size : " << recentTree.size() << endl;
+    vector<Tree<Data>*> exploredTree = recentTree;
+    moveTreeRecChild(recentTree[0],exploredTree, delta);
+    for(int i = 0; i<(recentTree[0])->getChildrenSize(); i++){
+        moveTreeRecParent((*(recentTree[0]))[i],exploredTree, delta);
+    }
+    cerr << "SORTIE MOVE DATA" << endl;
+}
+
+void updateRecentData(Tree<Data>& root, int delta){
+    // ECRIRE LE CAS OU ILS NE SONT PAS TOUS EFFACES
+    int recentSize = root.getRecentTreeSize();
     Data* d;
-    Tree<Data>* tTemp;
-    int recentSize = t.getRecentTreeSize();
-
+    Tree<Data>* tRecent;
+    vector<Tree<Data>*> copyRecentTree = root.getRecentVecTree();
     for(int i = 0; i<recentSize; i++){
-        tTemp = t.getRecentDataTree(i);
-        d = tTemp->getValue();
+        tRecent = copyRecentTree[i];
+        d = tRecent->getValue();
         int pos = d->getPosInsert();
         if(delta < 0){
             int ecart = (*d)[pos][2] - (*d)[pos][0];
@@ -1223,85 +1281,98 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
                 (*d)[k][0] += delta;
                 (*d)[k][2] += delta;
             }
-//            moveData(tTemp,delta);
+            d->shiftMaxX(delta);
             if(Tools::isGaussian((*d)[pos],d->getMean(),d->getVar(),d->getSample())){
                 cerr << "ERASE DATA, i : " << i << endl;
-                t.eraseRecentDataTree(tTemp);
+                root.eraseRecentDataTree(tRecent);
             }
         }
     }
-    if(recentSize != 0){
-        moveData(tTemp, delta);
-    }
+}
 
-    if(recentSize == 0){
+void newRecentData(Tree<Data>& root, int* min, int imageHeight, int delta){
+    cerr << "ENTREE NEW RECENT DATA" << endl;
+    Point seg2(4);
+    vector<double> interMatch;
+    vector<int> indexMatch;
+    for(int i = 0; i+1<imageHeight; i++){
+        //cerr << "PIXEL " << min[i] << ", " << i << endl;
+        seg2[0] = min[i];
+        seg2[1] = i;
+        seg2[2] = min[i+1];
+        seg2[3] = i+1;
+        findData(&root, &root, seg2, interMatch, indexMatch);
+        /*
+        if(d != NULL){
+            if(delta > 0){
+                i++;
+                interMatch.push_back((*inter)[0]);
+                indexMatch.push_back(index);
+            }else if(delta < 0){
+                delta = d->reduceData(delta,index);
+                if(delta != 0){
+                    d->eraseData();
+                    if(d->getDataSize() == 0){
+                        t.eraseRecentData(i);
+                    }
+                }
+                if(delta < 0){
+                    cerr << "GROS PROBLEME DELTA ENCORE <0" << endl;
+                }
+            }
+        }else{
+            //cerr << "D NULL" << endl;
+        }
+        */
+    }
+    Point gen;
+    Tree<Data>* tTemp;
+    Data* d;
+    for(int i = 0; i<root.getRecentTreeSize(); i++){
+        tTemp = root.getRecentDataTree(i);
+        d = tTemp->getValue();
+        gen = Tools::generateY(d->getMean(),d->getVar(),interMatch[i], interMatch[i]+delta-1);
+        d->insertData4D(gen,interMatch[i],indexMatch[i]);
+        d->updateX(gen[0]);
+        d->updateX(gen[2]);
+        d->updateY(gen[1]);
+        d->updateY(gen[3]);
+
+        if((*d)[indexMatch[i]][0] == (int)interMatch[i]){
+            cerr << "INTERSECTION NOEUD" << endl;
+            //difficile à tester donc on suppose que ça marche ... pour le moment donc à vérifier en cas de problème inconnu
+//            for(int k = 0; k<(int)parents.size(); k++){
+//                dParent = (parents[k])->getValue();
+//                if(dParent != NULL){
+//                    cerr << "DECALAGE PARENT" << endl;
+//                    (*dParent)[dParent->getDataSize()-1][3] = gen[3];
+//                }
+//            }
+        }
+
+    }
+    cerr << "SORTIE NEW RECENT DATA" << endl;
+}
+
+void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolution conv, CAIR_energy ener, Tree<Data>& t){
+    cerr << "CAIR DATA ENTREE" << endl;
+
+    int delta = goal_x - (*Source).Width();
+    int recentSize = t.getRecentTreeSize();
+    if(recentSize != 0){
+        moveData(t.getRecentVecTree(), delta);
+        updateRecentData(t, delta);
+        cerr << "APRES UPDATE recent size : " << t.getRecentTreeSize() << endl;
+    }else{
         Startup_Threads();
         CML_image Image(1,1);
         CML_image_ptr Image_Ptr(1,1);
         Init_CML_Image(Source, S_Weights, &Image, &Image_Ptr);
         int* min = findMinPath(&Image_Ptr, conv, ener);
-        Point seg2(4);
-        double** inter = new double*();
-        vector<double> interMatch;
-        vector<int> indexMatch;
-        vector<Tree<Data>*> parents;
-        for(int i = 0; i+1<Image_Ptr.Height(); i++){
-            //cerr << "PIXEL " << min[i] << ", " << i << endl;
-            d = NULL;
-            seg2[0] = min[i];
-            seg2[1] = i;
-            seg2[2] = min[i+1];
-            seg2[3] = i+1;
-            findData(&t, &t, seg2, interMatch, indexMatch);
-//            if(t.getRecentTreeSize() != 0){
-//                i++;
-//            }
-            /*
-            if(d != NULL){
-                if(delta > 0){
-                    i++;
-                    interMatch.push_back((*inter)[0]);
-                    indexMatch.push_back(index);
-                }else if(delta < 0){
-                    delta = d->reduceData(delta,index);
-                    if(delta != 0){
-                        d->eraseData();
-                        if(d->getDataSize() == 0){
-                            t.eraseRecentData(i);
-                        }
-                    }
-                    if(delta < 0){
-                        cerr << "GROS PROBLEME DELTA ENCORE <0" << endl;
-                    }
-                }
-            }else{
-                //cerr << "D NULL" << endl;
-            }
-            */
-        }
-        Data* dParent;
-        Point gen;
-        for(int i = 0; i<t.getRecentTreeSize(); i++){
-            tTemp = t.getRecentDataTree(i);
-            d = tTemp->getValue();
-            gen = Tools::generateY(d->getMean(),d->getVar(),interMatch[i], interMatch[i]+delta-1);
-            d->insertData4D(gen,interMatch[i],indexMatch[i]);
-            moveData(tTemp,delta);
-            if((*d)[indexMatch[i]][0] == (int)interMatch[i]){
-                //difficile à tester donc on suppose que ça marche ... pour le moment donc à vérifier en cas de problème inconnu
-                for(int k = 0; k<(int)parents.size(); k++){
-                    dParent = (parents[k])->getValue();
-                    if(dParent != NULL){
-                        cerr << "DECALAGE PARENT" << endl;
-                        (*dParent)[dParent->getDataSize()-1][3] = gen[3];
-                    }
-                }
-            }
-        }
-        delete[] min;
-        delete[] inter;
+        newRecentData(t, min, Image_Ptr.Height(), delta);
         Shutdown_Threads();
-
+        delete[] min;
+        moveData(t.getRecentVecTree(), delta);
     }
 
     cerr << "CAIR DATA SORTIE" << endl;
