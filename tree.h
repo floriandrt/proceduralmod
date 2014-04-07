@@ -32,6 +32,7 @@ public:
     void addRecentDataTree(Tree<T>* t);
     void eraseRecentDataTree(Tree<T>* t);
     int getRecentTreeSize();
+    void clearRecent();
     Tree<T>* getRecentDataTree(int i);
     std::vector<Tree<T>*>& getRecentVecTree();
     int getRecentSize();
@@ -139,6 +140,11 @@ void Tree<T>::eraseRecentDataTree(Tree<T>* t){
 template<class T>
 Tree<T>* Tree<T>::getRecentDataTree(int i){
     return recentDataTree[i];
+}
+
+template<class T>
+void Tree<T>::clearRecent(){
+    recentDataTree.clear();
 }
 
 template<class T>

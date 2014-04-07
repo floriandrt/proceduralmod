@@ -92,7 +92,7 @@ StateBox::StateBox(ImageScene *_scene):
     Data* d4 = new Data();
     Data* d5 = new Data();
     Data* d6 = new Data();
-
+    int sampleSize = 10000;
     Point p11(4);
     p11[0] = 0;
     p11[1] = 110;
@@ -107,7 +107,7 @@ StateBox::StateBox(ImageScene *_scene):
     d1->addData(p12);
     d1->setMean(Tools::averageMulDim(*d1));
     d1->setVar(Tools::varianceMulDim(*d1,d1->getMean()));
-    for(int i = 0; i<1000; i++){
+    for(int i = 0; i<sampleSize; i++){
         d1->addSample(Tools::generateMulDim(d1->getMean(),d1->getVar()));
     }
 
@@ -125,7 +125,7 @@ StateBox::StateBox(ImageScene *_scene):
     d2->addData(p22);
     d2->setMean(Tools::averageMulDim(*d2));
     d2->setVar(Tools::varianceMulDim(*d2,d2->getMean()));
-    for(int i = 0; i<1000; i++){
+    for(int i = 0; i<sampleSize; i++){
         d2->addSample(Tools::generateMulDim(d2->getMean(),d2->getVar()));
     }
 
@@ -143,7 +143,7 @@ StateBox::StateBox(ImageScene *_scene):
     d3->addData(p32);
     d3->setMean(Tools::averageMulDim(*d3));
     d3->setVar(Tools::varianceMulDim(*d3,d3->getMean()));
-    for(int i = 0; i<1000; i++){
+    for(int i = 0; i<sampleSize; i++){
         d3->addSample(Tools::generateMulDim(d3->getMean(),d3->getVar()));
     }
 
@@ -173,7 +173,7 @@ StateBox::StateBox(ImageScene *_scene):
     d4->addData(p44);
     d4->setMean(Tools::averageMulDim(*d4));
     d4->setVar(Tools::varianceMulDim(*d4,d4->getMean()));
-    for(int i = 0; i<1000; i++){
+    for(int i = 0; i<sampleSize; i++){
         d4->addSample(Tools::generateMulDim(d4->getMean(),d4->getVar()));
     }
 
@@ -191,7 +191,7 @@ StateBox::StateBox(ImageScene *_scene):
     d5->addData(p52);
     d5->setMean(Tools::averageMulDim(*d5));
     d5->setVar(Tools::varianceMulDim(*d5,d5->getMean()));
-    for(int i = 0; i<1000; i++){
+    for(int i = 0; i<sampleSize; i++){
         d5->addSample(Tools::generateMulDim(d5->getMean(),d5->getVar()));
     }
 
@@ -209,7 +209,7 @@ StateBox::StateBox(ImageScene *_scene):
     d6->addData(p62);
     d6->setMean(Tools::averageMulDim(*d6));
     d6->setVar(Tools::varianceMulDim(*d6,d6->getMean()));
-    for(int i = 0; i<1000; i++){
+    for(int i = 0; i<sampleSize; i++){
         d6->addSample(Tools::generateMulDim(d6->getMean(),d6->getVar()));
     }
 

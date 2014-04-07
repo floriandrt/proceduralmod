@@ -65,6 +65,14 @@ void Data::eraseData(){
         data[posInsert-1][2] = data[posInsert][2];
         data[posInsert-1][3] = data[posInsert][3];
     }
+    minY = data[0][0];
+    maxY = data[0][0];
+    for(int i = 0; i<data.size(); i++){
+        minY = data[i][1] < minY ? data[i][1] : minY;
+        maxY = data[i][1] < minY ? data[i][1] : minY;
+        minY = data[i][3] < minY ? data[i][1] : minY;
+        maxY = data[i][3] < minY ? data[i][1] : minY;
+    }
     data.erase(data.begin()+posInsert);
     cerr << "SORTIE eraseData" << endl;
 }
@@ -83,6 +91,7 @@ int Data::reduceData(int delta, int index){
         }
         data[index][2] += delta;
     }
+    maxX += delta;
     cerr << "SORTIE VRAIE reduceData" << endl;
     return delta+ecart;
 }
@@ -92,6 +101,11 @@ void Data::insertData4D(Point newData, int pos, int ind){
     cerr << "ENTREE INSERT DATA 4D; pos : " << pos << "; index : " << ind << endl;
     double temp1, temp2;
     int delta = newData[2] - newData[0] + 1;
+    maxX += delta;
+    minY = (newData[1] < minY) ? newData[1] : minY;
+    maxY = (newData[1] > maxY) ? newData[1] : maxY;
+    minY = (newData[3] < minY) ? newData[3] : minY;
+    maxY = (newData[3] > maxY) ? newData[3] : maxY;
     cerr << "delta : " << delta << endl;
     if(pos == data[ind][0]){
         for(int j = ind; j<(int)data.size(); j++){

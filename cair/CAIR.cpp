@@ -1153,10 +1153,10 @@ void findData(Tree<Data>* t, Tree<Data>* root, Point seg2, vector<double>& inter
     //cerr << "FIND DATA ENTREE" << endl;
     double* inter;
     Data* d = t->getValue();
-    //if(d != NULL){
-        //cerr << "seg2 x0 " << seg2[0] << " seg2 y0 " << seg2[1] << " seg2 x1 " << seg2[2] << " seg2 y1 " << seg2[3] << endl;
-        //cerr << "x min " << d->xMin() << " x max " << d->xMax() << " y min " << d->yMin() << " y max " << d->yMax() << endl;
-    //}
+//    if(d != NULL){
+//        cerr << "seg2 x0 " << seg2[0] << " seg2 y0 " << seg2[1] << " seg2 x1 " << seg2[2] << " seg2 y1 " << seg2[3] << endl;
+//        cerr << "x min " << d->xMin() << " x max " << d->xMax() << " y min " << d->yMin() << " y max " << d->yMax() << endl;
+//    }
     if(d != NULL && seg2[0] >= d->xMin() && seg2[1] >= d->yMin() && seg2[2] <= d->xMax() && seg2[3] <= d->yMax()){
         for(int i = 0; i<d->getDataSize(); i++){
             //if(seg2[0] <= (*d)[i][2] && seg2[2] >= (*d)[i][0] && seg2[1] <= (*d)[i][3] && seg2[3] >= (*d)[i][1]){
@@ -1167,7 +1167,7 @@ void findData(Tree<Data>* t, Tree<Data>* root, Point seg2, vector<double>& inter
                     indexMatch.push_back(i);
                     cerr << "ADD IN RECENT TREE : " << t << endl;
                     root->addRecentDataTree(t);
-                    cerr << "FIND DATA SORTIE NON NULL non rec " << endl;
+                    //cerr << "FIND DATA SORTIE NON NULL non rec " << endl;
                     return;
                 }
             //}
@@ -1256,15 +1256,37 @@ void moveData(vector<Tree<Data>*> recentTree, int delta){
 
 void updateRecentData(Tree<Data>& root, int delta){
     // ECRIRE LE CAS OU ILS NE SONT PAS TOUS EFFACES
+    moveData(root.getRecentVecTree(), delta);
     int recentSize = root.getRecentTreeSize();
+    bool doClear = false;
     Data* d;
     Tree<Data>* tRecent;
-    vector<Tree<Data>*> copyRecentTree = root.getRecentVecTree();
+    //vector<Tree<Data>*> copyRecentTree = root.getRecentVecTree();
     for(int i = 0; i<recentSize; i++){
-        tRecent = copyRecentTree[i];
+        tRecent = root.getRecentDataTree(i);
         d = tRecent->getValue();
         int pos = d->getPosInsert();
         if(delta < 0){
+            delta = d->reduceData(delta,pos);
+            if(delta != 0){
+                doClear = true;
+                d->eraseData();
+                if(d->getDataSize() == 0){
+                    //fusionner 2 noeuds
+                    for(int k = 0; k<tRecent->getParentSize(); k++){
+                        for(int j = 0; j<tRecent->getChildrenSize(); j++){
+                            (tRecent->getParent(k))->addChild((*tRecent)[j]);
+                        }
+                    }
+                    for(int k = 0; k<tRecent->getChildrenSize(); k++){
+                        for(int j = 0; j<tRecent->getParentSize(); j++){
+                            ((*tRecent)[k])->addParent(tRecent->getParent(j));
+                        }
+                    }
+                    delete d;
+                }
+            }
+            /*
             int ecart = (*d)[pos][2] - (*d)[pos][0];
             if(delta+ecart <= 0){
                 d->eraseData();
@@ -1275,6 +1297,7 @@ void updateRecentData(Tree<Data>& root, int delta){
                 }
                 (*d)[pos][2] += delta;
             }
+            */
         }else if(delta > 0){
             (*d)[pos][2] += delta;
             for(int k = pos+1; k<d->getDataSize(); k++){
@@ -1284,9 +1307,13 @@ void updateRecentData(Tree<Data>& root, int delta){
             d->shiftMaxX(delta);
             if(Tools::isGaussian((*d)[pos],d->getMean(),d->getVar(),d->getSample())){
                 cerr << "ERASE DATA, i : " << i << endl;
-                root.eraseRecentDataTree(tRecent);
+                //root.eraseRecentDataTree(tRecent);
+                doClear = true;
             }
         }
+    }
+    if(doClear){
+        root.clearRecent();
     }
 }
 
@@ -1295,6 +1322,8 @@ void newRecentData(Tree<Data>& root, int* min, int imageHeight, int delta){
     Point seg2(4);
     vector<double> interMatch;
     vector<int> indexMatch;
+    int reducedDelta;
+    //trouve l'intersection entre le chemin d'énergie min et les data
     for(int i = 0; i+1<imageHeight; i++){
         //cerr << "PIXEL " << min[i] << ", " << i << endl;
         seg2[0] = min[i];
@@ -1302,41 +1331,42 @@ void newRecentData(Tree<Data>& root, int* min, int imageHeight, int delta){
         seg2[2] = min[i+1];
         seg2[3] = i+1;
         findData(&root, &root, seg2, interMatch, indexMatch);
-        /*
-        if(d != NULL){
-            if(delta > 0){
-                i++;
-                interMatch.push_back((*inter)[0]);
-                indexMatch.push_back(index);
-            }else if(delta < 0){
-                delta = d->reduceData(delta,index);
-                if(delta != 0){
-                    d->eraseData();
-                    if(d->getDataSize() == 0){
-                        t.eraseRecentData(i);
-                    }
-                }
-                if(delta < 0){
-                    cerr << "GROS PROBLEME DELTA ENCORE <0" << endl;
-                }
-            }
-        }else{
-            //cerr << "D NULL" << endl;
-        }
-        */
     }
+    bool doClear = false;
     Point gen;
     Tree<Data>* tTemp;
     Data* d;
+    vector<Tree<Data>*> copyRecentTree = root.getRecentVecTree();
     for(int i = 0; i<root.getRecentTreeSize(); i++){
-        tTemp = root.getRecentDataTree(i);
+        tTemp = copyRecentTree[i];
         d = tTemp->getValue();
-        gen = Tools::generateY(d->getMean(),d->getVar(),interMatch[i], interMatch[i]+delta-1);
-        d->insertData4D(gen,interMatch[i],indexMatch[i]);
-        d->updateX(gen[0]);
-        d->updateX(gen[2]);
-        d->updateY(gen[1]);
-        d->updateY(gen[3]);
+        if(delta > 0){
+            gen = Tools::generateY(d->getMean(),d->getVar(),interMatch[i], interMatch[i]+delta-1);
+            d->insertData4D(gen,interMatch[i],indexMatch[i]);
+        }else if(delta < 0){
+            reducedDelta = d->reduceData(delta,indexMatch[i]);
+            if(reducedDelta == 0){
+                doClear = true;
+                d->eraseData();
+                if(d->getDataSize() == 0){
+                    //fusionner 2 noeuds
+                    for(int k = 0; k<tTemp->getParentSize(); k++){
+                        for(int j = 0; j<tTemp->getChildrenSize(); j++){
+                            (tTemp->getParent(k))->addChild((*tTemp)[j]);
+                        }
+                    }
+                    for(int k = 0; k<tTemp->getChildrenSize(); k++){
+                        for(int j = 0; j<tTemp->getParentSize(); j++){
+                            ((*tTemp)[k])->addParent(tTemp->getParent(j));
+                        }
+                    }
+                    delete d;
+                }
+            }
+            if(reducedDelta < 0){
+                cerr << "GROS PROBLEME DELTA ENCORE <0" << endl;
+            }
+        }
 
         if((*d)[indexMatch[i]][0] == (int)interMatch[i]){
             cerr << "INTERSECTION NOEUD" << endl;
@@ -1351,6 +1381,10 @@ void newRecentData(Tree<Data>& root, int* min, int imageHeight, int delta){
         }
 
     }
+    moveData(root.getRecentVecTree(), delta);
+    if(doClear){
+        root.clearRecent();
+    }
     cerr << "SORTIE NEW RECENT DATA" << endl;
 }
 
@@ -1360,7 +1394,6 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
     int delta = goal_x - (*Source).Width();
     int recentSize = t.getRecentTreeSize();
     if(recentSize != 0){
-        moveData(t.getRecentVecTree(), delta);
         updateRecentData(t, delta);
         cerr << "APRES UPDATE recent size : " << t.getRecentTreeSize() << endl;
     }else{
@@ -1372,7 +1405,6 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
         newRecentData(t, min, Image_Ptr.Height(), delta);
         Shutdown_Threads();
         delete[] min;
-        moveData(t.getRecentVecTree(), delta);
     }
 
     cerr << "CAIR DATA SORTIE" << endl;
