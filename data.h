@@ -9,6 +9,7 @@ class Data{
     private:
 //        int dataSize; //number of data
         std::vector<Point> data;
+        std::vector<Point> normData;
         std::vector<Point> sample;
         Point mean;
         double** var;
@@ -21,12 +22,14 @@ class Data{
         Data(): data(), sample(), mean(0), var(NULL), posInsert(-1), minX(0), maxX(0), minY(0), maxY(0){}
         Data(const Data& d);
         ~Data();
+        static Point normalize4D(Point p);
         void addData(Point newData);
-        void eraseData();
-        int reduceData(int delta, int index);
+        void eraseData(int delta);
+        int reduceData(int delta, int index, bool& doClear);
         void updateDate(int delta);
         void insertData4D(Point newData, int pos, int ind);
         int getDataSize() const;
+        bool isGaussian();
         Point getMean();
         double** getVar();
         std::vector<Point> getSample();
@@ -42,7 +45,9 @@ class Data{
         void updateY(double newY);
         void shiftMinX(double delta);
         void shiftMaxX(double delta);
-        bool has(int x, int y);
+        Point getSample(int i);
+        int getSampleSize();
+        Point getNormData(int i);
         Point operator[](int i) const;
         Point& operator[](int i);
         friend std::ostream& operator<<( std::ostream &flux, Data const& d );

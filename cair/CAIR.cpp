@@ -1055,6 +1055,27 @@ void CAIR_Threads( int thread_count )
 	}
 }
 
+template<class T>
+bool isInVector(vector<T> v, T val){
+    for(int i = 0; i<(int)v.size(); i++){
+       // cerr << "v[i] : " << v[i] << ", val : " << val << endl;
+        if(v[i] == val){
+            return true;
+        }
+    }
+    return false;
+}
+
+void printTree(Tree<Data>& t, int rang, vector<Tree<Data>*>& explored){
+    for(int i = 0; i<t.getChildrenSize(); i++){
+        printTree(*(t[i]),rang+1, explored);
+        if(!isInVector(explored,t[i])){
+            cerr << "enfant " << rang << " branche " << i << " : " << t[i] << endl;
+            explored.push_back(t[i]);
+        }
+    }
+}
+
 int* findMinPath(CML_image_ptr * Source_ptr, CAIR_convolution conv, CAIR_energy ener){
 //    cerr << "ENTREE ADD DATA" << endl;
 
@@ -1149,7 +1170,7 @@ double* intersection(Point seg1, Point seg2){
     return res;
 }
 
-void findData(Tree<Data>* t, Tree<Data>* root, Point seg2, vector<double>& interMatch, vector<int>& indexMatch){
+void findData(Tree<Data>* t, Tree<Data>* root, Point seg2, vector<double*>& interMatch, vector<int>& indexMatch){
     //cerr << "FIND DATA ENTREE" << endl;
     double* inter;
     Data* d = t->getValue();
@@ -1157,13 +1178,13 @@ void findData(Tree<Data>* t, Tree<Data>* root, Point seg2, vector<double>& inter
 //        cerr << "seg2 x0 " << seg2[0] << " seg2 y0 " << seg2[1] << " seg2 x1 " << seg2[2] << " seg2 y1 " << seg2[3] << endl;
 //        cerr << "x min " << d->xMin() << " x max " << d->xMax() << " y min " << d->yMin() << " y max " << d->yMax() << endl;
 //    }
-    if(d != NULL && seg2[0] >= d->xMin() && seg2[1] >= d->yMin() && seg2[2] <= d->xMax() && seg2[3] <= d->yMax()){
+    if(d != NULL /*&& seg2[0] >= d->xMin() && seg2[1] >= d->yMin() && seg2[2] <= d->xMax() && seg2[3] <= d->yMax()*/){
         for(int i = 0; i<d->getDataSize(); i++){
             //if(seg2[0] <= (*d)[i][2] && seg2[2] >= (*d)[i][0] && seg2[1] <= (*d)[i][3] && seg2[3] >= (*d)[i][1]){
                 inter = intersection((*d)[i], seg2);
                 //cerr << "inter : " << inter[0] << ", " << inter[1] << endl;
                 if(inter[0] != -1 && root->notInRecentTree(t)){
-                    interMatch.push_back(inter[0]);
+                    interMatch.push_back(inter);
                     indexMatch.push_back(i);
                     cerr << "ADD IN RECENT TREE : " << t << endl;
                     root->addRecentDataTree(t);
@@ -1187,19 +1208,9 @@ void afficherVec(vector<Tree<Data>*> v){
     cout << endl;
 }
 
-template<class T>
-bool isInVector(vector<T> v, T val){
-    for(int i = 0; i<(int)v.size(); i++){
-       // cerr << "v[i] : " << v[i] << ", val : " << val << endl;
-        if(v[i] == val){
-            return true;
-        }
-    }
-    return false;
-}
 
 void moveTreeRecParent(Tree<Data>* t, vector<Tree<Data>*>& exploredTree, int delta){
-    cerr << "ENTREE MOVE PARENT REC" << endl;
+    //cerr << "ENTREE MOVE PARENT REC" << endl;
     Tree<Data>* parent;
     Data* data;
     for(int i = 0; i<t->getParentSize(); i++){
@@ -1207,7 +1218,7 @@ void moveTreeRecParent(Tree<Data>* t, vector<Tree<Data>*>& exploredTree, int del
         if(!isInVector(exploredTree, parent)){
             data = parent->getValue();
             if(data == NULL){
-                cerr << "PROBLEME" << endl;
+                cerr << "PROBLEME DANS MOVE PARENT" << endl;
             }
             for(int k = 0; k<data->getDataSize(); k++){
                 (*data)[k][0] += delta;
@@ -1219,11 +1230,11 @@ void moveTreeRecParent(Tree<Data>* t, vector<Tree<Data>*>& exploredTree, int del
             moveTreeRecParent(parent, exploredTree, delta);
         }
     }
-    cerr << "SORTIE MOVE PARENT REC" << endl;
+    //cerr << "SORTIE MOVE PARENT REC" << endl;
 }
 
 void moveTreeRecChild(Tree<Data>* t, vector<Tree<Data>*>& exploredTree, int delta){
-    cerr << "ENTREE MOVE CHILD REC" << endl;
+    //cerr << "ENTREE MOVE CHILD REC" << endl;
     Tree<Data>* child;
     Data* data;
     for(int i = 0; i<t->getChildrenSize(); i++){
@@ -1241,7 +1252,7 @@ void moveTreeRecChild(Tree<Data>* t, vector<Tree<Data>*>& exploredTree, int delt
         moveTreeRecChild(child, exploredTree, delta);
         moveTreeRecParent(child, exploredTree, delta);
     }
-    cerr << "SORTIE MOVE CHILD REC" << endl;
+    //cerr << "SORTIE MOVE CHILD REC" << endl;
 }
 
 void moveData(vector<Tree<Data>*> recentTree, int delta){
@@ -1252,6 +1263,35 @@ void moveData(vector<Tree<Data>*> recentTree, int delta){
         moveTreeRecParent((*(recentTree[0]))[i],exploredTree, delta);
     }
     cerr << "SORTIE MOVE DATA" << endl;
+}
+
+void reductionRecentData(Tree<Data>* tRecent, Data* d, int delta, int index, bool& doClear){
+    cerr << "data size début : " << d->getDataSize() << endl;
+    delta = d->reduceData(delta,index,doClear);
+    if(d->getDataSize() == 0){
+        //cerr << "LES ENNUIS COMMENCENT" << endl;
+        //fusionner 2 noeuds
+        for(int k = 0; k<tRecent->getParentSize(); k++){
+            (tRecent->getParent(k))->setChildrenVec(tRecent->getChildrenVec());
+        }
+        Data* childData;
+        Data* parentData = (tRecent->getParent(0))->getValue();
+        for(int k = 0; k<tRecent->getChildrenSize(); k++){
+            ((*tRecent)[k])->setParentsVec(tRecent->getParentsVec());
+            if(parentData != NULL){
+                int parentDataSize = parentData->getDataSize() - 1;
+                childData = tRecent->getValue();
+                (*childData)[0][0] = (*parentData)[parentDataSize][0];
+                (*childData)[0][1] = (*parentData)[parentDataSize][1];
+                (*childData)[0][2] = (*parentData)[parentDataSize][2];
+                (*childData)[0][3] = (*parentData)[parentDataSize][3];
+            }
+        }
+        delete d;
+    }
+    if(delta < 0){
+        cerr << "GROS PROBLEME DELTA ENCORE <0" << endl;
+    }
 }
 
 void updateRecentData(Tree<Data>& root, int delta){
@@ -1267,25 +1307,7 @@ void updateRecentData(Tree<Data>& root, int delta){
         d = tRecent->getValue();
         int pos = d->getPosInsert();
         if(delta < 0){
-            delta = d->reduceData(delta,pos);
-            if(delta != 0){
-                doClear = true;
-                d->eraseData();
-                if(d->getDataSize() == 0){
-                    //fusionner 2 noeuds
-                    for(int k = 0; k<tRecent->getParentSize(); k++){
-                        for(int j = 0; j<tRecent->getChildrenSize(); j++){
-                            (tRecent->getParent(k))->addChild((*tRecent)[j]);
-                        }
-                    }
-                    for(int k = 0; k<tRecent->getChildrenSize(); k++){
-                        for(int j = 0; j<tRecent->getParentSize(); j++){
-                            ((*tRecent)[k])->addParent(tRecent->getParent(j));
-                        }
-                    }
-                    delete d;
-                }
-            }
+            reductionRecentData(tRecent, d, delta, pos, doClear);
             /*
             int ecart = (*d)[pos][2] - (*d)[pos][0];
             if(delta+ecart <= 0){
@@ -1320,9 +1342,8 @@ void updateRecentData(Tree<Data>& root, int delta){
 void newRecentData(Tree<Data>& root, int* min, int imageHeight, int delta){
     cerr << "ENTREE NEW RECENT DATA" << endl;
     Point seg2(4);
-    vector<double> interMatch;
+    vector<double*> interMatch;
     vector<int> indexMatch;
-    int reducedDelta;
     //trouve l'intersection entre le chemin d'énergie min et les data
     for(int i = 0; i+1<imageHeight; i++){
         //cerr << "PIXEL " << min[i] << ", " << i << endl;
@@ -1332,43 +1353,30 @@ void newRecentData(Tree<Data>& root, int* min, int imageHeight, int delta){
         seg2[3] = i+1;
         findData(&root, &root, seg2, interMatch, indexMatch);
     }
-    bool doClear = false;
-    Point gen;
-    Tree<Data>* tTemp;
-    Data* d;
-    vector<Tree<Data>*> copyRecentTree = root.getRecentVecTree();
-    for(int i = 0; i<root.getRecentTreeSize(); i++){
-        tTemp = copyRecentTree[i];
-        d = tTemp->getValue();
-        if(delta > 0){
-            gen = Tools::generateY(d->getMean(),d->getVar(),interMatch[i], interMatch[i]+delta-1);
-            d->insertData4D(gen,interMatch[i],indexMatch[i]);
-        }else if(delta < 0){
-            reducedDelta = d->reduceData(delta,indexMatch[i]);
-            if(reducedDelta == 0){
-                doClear = true;
-                d->eraseData();
-                if(d->getDataSize() == 0){
-                    //fusionner 2 noeuds
-                    for(int k = 0; k<tTemp->getParentSize(); k++){
-                        for(int j = 0; j<tTemp->getChildrenSize(); j++){
-                            (tTemp->getParent(k))->addChild((*tTemp)[j]);
-                        }
-                    }
-                    for(int k = 0; k<tTemp->getChildrenSize(); k++){
-                        for(int j = 0; j<tTemp->getParentSize(); j++){
-                            ((*tTemp)[k])->addParent(tTemp->getParent(j));
-                        }
-                    }
-                    delete d;
-                }
-            }
-            if(reducedDelta < 0){
-                cerr << "GROS PROBLEME DELTA ENCORE <0" << endl;
+    if(delta > 0 && yes to adding a node){
+        for(int i = 0; i<root.getRecentTreeSize(); i++){
+            if(it is ok to add a node here){
+                tRecent = root.getRecentDataTree(i);
+                insertion des noeuds
             }
         }
+    }
+    bool doClear = false;
+    Tree<Data>* tRecent;
+    Data* d;
+    //vector<Tree<Data>*> copyRecentTree = root.getRecentVecTree();
+    for(int i = 0; i<root.getRecentTreeSize(); i++){
+        tRecent = root.getRecentDataTree(i);
+        d = tRecent->getValue();
+        if(delta > 0){
+            Point gen = Tools::generateY(d->getMean(),d->getVar(), interMatch[i][0], interMatch[i][0]+delta-1, interMatch[i][1]);
+//            Point gen = Tools::pickInSample(d, interMatch[i], interMatch[i]+delta-1);
+            d->insertData4D(gen,interMatch[i][0],indexMatch[i]);
+        }else if(delta < 0){
+            reductionRecentData(tRecent, d, delta, indexMatch[i], doClear);
+        }
 
-        if((*d)[indexMatch[i]][0] == (int)interMatch[i]){
+        if((*d)[indexMatch[i]][0] == (int)interMatch[i][0]){
             cerr << "INTERSECTION NOEUD" << endl;
             //difficile à tester donc on suppose que ça marche ... pour le moment donc à vérifier en cas de problème inconnu
 //            for(int k = 0; k<(int)parents.size(); k++){
@@ -1392,10 +1400,11 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
     cerr << "CAIR DATA ENTREE" << endl;
 
     int delta = goal_x - (*Source).Width();
+    cerr << "delta : " << delta << endl;
     int recentSize = t.getRecentTreeSize();
     if(recentSize != 0){
         updateRecentData(t, delta);
-        cerr << "APRES UPDATE recent size : " << t.getRecentTreeSize() << endl;
+        cerr << "APRES UPDATE recent size : " << t.getRecentTreeSize() << endl;        
     }else{
         Startup_Threads();
         CML_image Image(1,1);
@@ -1406,7 +1415,9 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
         Shutdown_Threads();
         delete[] min;
     }
-
+    vector<Tree<Data>*> explored;
+    explored.push_back(&t);
+    printTree(t,0, explored);
     cerr << "CAIR DATA SORTIE" << endl;
 }
 

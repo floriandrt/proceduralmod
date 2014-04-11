@@ -16,14 +16,23 @@ Point mult(double** const A, Point x){
     return res;
 }
 
+double** add(double** A, int dim, double val){
+    double** res = new double*[dim];
+    for(int i = 0; i<dim; i++){
+        res[i] = new double[dim];
+        for(int j = 0; j<dim; j++){
+            res[i][j] = (i==j) ? A[i][j]+val : A[i][j];
+        }
+    }
+    return res;
+}
+
 //méthode de calcul d'une racine carrée d'une matrice
 double** cholesky(double** A, int size){
     double** L = new double*[size];
     double sum;
     double prod = 0;
-    for(int i = 0; i<size; i++){
-        A[i][i] += 0.5;
-    }
+
     for(int i = 0; i<size; i++){
         sum = 0;
         L[i] = new double[size];
@@ -39,10 +48,7 @@ double** cholesky(double** A, int size){
             }else if(i == j){
                 L[i][i] = sqrt(A[i][i]-sum);
                 if(abs(L[i][i]) < 0.0000001){
-                    for(int i = 0; i<size; i++){
-                        A[i][i] += 0.5;
-                    }
-                    return cholesky(A,size);
+                    return cholesky(add(A,size,0.000001),size);
                 }
             }else{
                 L[i][j] = 0;
@@ -77,6 +83,19 @@ Point Tools::averageMulDim(Data& d){
     return res;
 }
 
+Point Tools::averageMulDimNorm(Data& d){
+    int dim = d[0].getSize();
+    Point res(dim);
+    for(int i = 0; i<dim; i++){
+        res[i] = 0;
+        for(int j = 0; j<d.getDataSize(); j++){
+            res[i] += (d.getNormData(j))[i];
+        }
+        res[i] /= d.getDataSize();
+    }
+    return res;
+}
+
 double* Tools::variance(double **data, double mean[], int dim, int size){
     double *result = new double[dim];
     for(int i = 0; i<dim; i++){
@@ -96,6 +115,7 @@ double** Tools::varianceMulDim(Data& d, Point mean){
     for(int i = 0; i<dim; i++){
         res[i] = new double[dim];
         for(int j = 0; j<dim; j++){
+            res[i][j] = 0;
             for(int k = 0; k<d.getDataSize(); k++){
                 res[i][j] += (d[k][i]-mean[i])*(d[k][j]-mean[j]);
             }
@@ -105,23 +125,21 @@ double** Tools::varianceMulDim(Data& d, Point mean){
     return res;
 }
 
-//double det(Point* a){
-//    return a[0][0]*a[1][1]-(a[0][1]*a[1][0]);
-//}
-
-//a doit être de taille 2
-// Point* inv2D(Point* a){
-// 	if(det(a) == 0){
-// 		cerr << "Non inversible matrix" << endl;
-// 		return NULL;
-// 	}
-// 	Point *res = new Point[2];
-// 	res[0].setX(a[1][1]);
-// 	res[0].setY(-a[0][1]);
-// 	res[1].setX(-a[1][0]);
-// 	res[1].setY(a[0][0]);
-// 	return res;
-// }
+double** Tools::varianceMulDimNorm(Data& d, Point mean){
+    int dim = mean.getSize();
+    double** res = new double*[dim];
+    for(int i = 0; i<dim; i++){
+        res[i] = new double[dim];
+        for(int j = 0; j<dim; j++){
+            res[i][j] = 0;
+            for(int k = 0; k<d.getDataSize(); k++){
+                res[i][j] += ((d.getNormData(k))[i]-mean[i])*((d.getNormData(k))[j]-mean[j]);
+            }
+            res[i][j] /= (d.getDataSize()-1);
+        }
+    }
+    return res;
+}
 
 double Tools::gaussian(double x, double mean, double variance){
     return (1/(sqrt(2*M_PI)*variance))*exp(-0.5*pow((x-mean)/variance,2));
@@ -165,8 +183,18 @@ Point Tools::generateMulDim(Point mean, double **variance){
     return y;
 }
 
-Point Tools::generateY(Point mean, double** variance, double x1, double x2){
+Point Tools::generateY(Point mean, double** variance, double x1, double x2, double y1){
     Point y = generateMulDim(mean, variance);
+    cout << "y : " << y << endl;
+    y[0] = x1;
+    y[1] = y1;
+    y[2] = x2;
+    y[3] += y1;
+    return y;
+}
+
+Point Tools::pickInSample(Data* d, double x1, double x2){
+    Point y = d->getSample(rand() % (d->getSampleSize()-1));
     y[0] = x1;
     y[2] = x2;
     return y;
@@ -184,7 +212,7 @@ Point Tools::rejet(Point min, Point max, Point mean, double** variance, int limi
 
 Point Tools::rejet(Point mean, double** variance, vector<Point> sample){
     Point test = generateMulDim(mean, variance);
-    int threshold = 10;
+    int threshold = 1;
     for(uint i = 0; i<sample.size(); i++){
         if(test < (sample[i]+threshold) && test > (sample[i]-threshold)){
             return test;
@@ -199,6 +227,14 @@ bool Tools::isGaussian(Point x, Point mean, double** var, vector<Point> sample){
 //    min -= 30;
 //    max += 30;
 //    Point res = rejet(min, max, mean, var, 100000);
-    Point res = rejet(mean,var,sample);
-    return !(res.getSize() == 0);
+//    Point res = rejet(mean,var,sample);
+    int threshold = 1;
+    Point normX = Data::normalize4D(x);
+    for(int i = 0; i<(int)sample.size(); i++){
+        if(normX < (sample[i]+threshold) && normX > (sample[i]-threshold)){
+            return true;
+        }
+    }
+    return false;
+//    return !(res.getSize() == 0);
 }

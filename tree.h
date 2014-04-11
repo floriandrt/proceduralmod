@@ -27,8 +27,14 @@ public:
     void addParent(Tree<T>* p);
     Tree<T>* getParent(int i);
     int getParentSize();
+    void setParentsVec(std::vector<Tree<T>*> p);
+    std::vector<Tree<T>*>& getParentsVec();
+    void clearParents();
     void addChild(Tree<T>* c);
     int getChildrenSize();
+    void setChildrenVec(std::vector<Tree<T>*> c);
+    std::vector<Tree<T>*>& getChildrenVec();
+    void clearChildren();
     void addRecentDataTree(Tree<T>* t);
     void eraseRecentDataTree(Tree<T>* t);
     int getRecentTreeSize();
@@ -110,6 +116,21 @@ int Tree<T>::getParentSize(){
 }
 
 template<class T>
+void Tree<T>::setParentsVec(std::vector<Tree<T>*> p){
+    parents = p;
+}
+
+template<class T>
+std::vector<Tree<T>*>& Tree<T>::getParentsVec(){
+    return parents;
+}
+
+template<class T>
+void Tree<T>::clearParents(){
+    parents.clear();
+}
+
+template<class T>
 void Tree<T>::addChild(Tree<T>* c){
     children.push_back(c);
     children[children.size()-1]->addParent(this);
@@ -119,6 +140,21 @@ void Tree<T>::addChild(Tree<T>* c){
 template<class T>
 int Tree<T>::getChildrenSize(){
     return children.size();
+}
+
+template<class T>
+void Tree<T>::setChildrenVec(std::vector<Tree<T>*> c){
+    children = c;
+}
+
+template<class T>
+std::vector<Tree<T>*>& Tree<T>::getChildrenVec(){
+    return children;
+}
+
+template<class T>
+void Tree<T>::clearChildren(){
+    children.clear();
 }
 
 template<class T>

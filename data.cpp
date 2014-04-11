@@ -37,6 +37,15 @@ int max(int a, int b){
     return b;
 }
 
+Point Data::normalize4D(Point p){
+    Point res(4);
+    res[0] = 0;
+    res[1] = 0;
+    res[2] = p[2] - p[0];
+    res[3] = p[3] - p[1];
+    return res;
+}
+
 void Data::addData(Point newData){
     if((int)data.size() == 0){
         minX = min(newData[0],newData[2]);
@@ -54,20 +63,22 @@ void Data::addData(Point newData){
         maxY = max(newData[3],maxY);
     }
     data.push_back(newData);
+    Point norm = normalize4D(newData);
+    normData.push_back(norm);
 }
 
-void Data::eraseData(){
+void Data::eraseData(int delta){
     cerr << "ENTREE eraseData, posInsert : " << posInsert << endl;
     if(posInsert+1<(int)data.size()){
         data[posInsert+1][0] = data[posInsert][0];
         data[posInsert+1][1] = data[posInsert][1];
-    }else{
-        data[posInsert-1][2] = data[posInsert][2];
+    }else if(posInsert-1 >= 0){
+        data[posInsert-1][2] = data[posInsert][2] + delta;
         data[posInsert-1][3] = data[posInsert][3];
     }
     minY = data[0][0];
     maxY = data[0][0];
-    for(int i = 0; i<data.size(); i++){
+    for(int i = 0; i<(int)data.size(); i++){
         minY = data[i][1] < minY ? data[i][1] : minY;
         maxY = data[i][1] < minY ? data[i][1] : minY;
         minY = data[i][3] < minY ? data[i][1] : minY;
@@ -78,19 +89,19 @@ void Data::eraseData(){
 }
 
 //delta < 0
-int Data::reduceData(int delta, int index){
+int Data::reduceData(int delta, int index, bool& doClear){
     cerr << "ENTREE reduceData, delta : " << delta << endl;
     int ecart = data[index][2] - data[index][0];
     posInsert = index;
     if(delta+ecart <= 0){
-        eraseData();
-    }else{
-        for(int j = index+1; j<(int)data.size(); j++){
-            data[j][0] += delta;
-            data[j][2] += delta;
-        }
-        data[index][2] += delta;
+        eraseData(delta);
+        doClear = true;
     }
+    for(int j = index+1; j<(int)data.size(); j++){
+        data[j][0] += delta;
+        data[j][2] += delta;
+    }
+    data[index][2] += delta;
     maxX += delta;
     cerr << "SORTIE VRAIE reduceData" << endl;
     return delta+ecart;
@@ -208,30 +219,16 @@ void Data::shiftMaxX(double delta){
     maxX += delta;
 }
 
-bool Data::has(int x, int y){
-    cout << "ENTREE HAS, data size : " << (int)data.size() << endl;
-    double a, b;
-    for(int i = 0; i<(int)data.size(); i++){
-        a = 0;
-        if(data[i][0] != data[i][2]){
-            a = data[i][3]-data[i][1];
-            a /= data[i][2]-data[i][0];
-        }
-        b = data[i][3]-(data[i][2]*a);
-        cout << data[i][3] << endl;
-        cout << data[i][2] << endl;
-        cout << data[i][1] << endl;
-        cout << data[i][0] << endl;
-        cout << "a : " << a << endl;
-        cout << "a*x+b " << a*x+b << endl;
-        cout << "y " << y << endl;
-        if((a*x+b) < y+2 && (a*x+b) > y-2){
-            cout << "data->has TRUE" << endl;
-            return true;
-        }
-    }
-    cout << "data->has FALSE" << endl;
-    return false;
+Point Data::getSample(int i){
+    return sample[i];
+}
+
+int Data::getSampleSize(){
+    return sample.size();
+}
+
+Point Data::getNormData(int i){
+    return normData[i];
 }
 
 Point Data::operator[](int i) const{

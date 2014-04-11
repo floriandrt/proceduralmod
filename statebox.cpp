@@ -47,15 +47,19 @@ void drawImagefromData(Data& d, QImage* _img){
 }
 
 void f(Tree<Data>* t, QPainter& qPaint){
-    if(!t->getIsLeaf()){
-        for(int i = 0; i<t->getChildrenSize(); i++){
-            f((*t)[i], qPaint);
-        }
+    //cerr << "ENTREE F children size : " << t->getChildrenSize() << endl;
+    for(int i = 0; i<t->getChildrenSize(); i++){
+        f((*t)[i], qPaint);
     }
+    //cerr << "APRES REC" << endl;
     Data* temp = t->getValue();
+    if(temp == NULL){
+        cerr << "NULL" << endl;
+    }
     for(int i = 0; i<temp->getDataSize(); i++){
         qPaint.drawLine((*temp)[i][0],(*temp)[i][1],(*temp)[i][2],(*temp)[i][3]);
     }
+    //cerr << "SORTIE F" << endl;
 }
 
 void drawImagefromData(Tree<Data>& t, QImage* _img){
@@ -92,7 +96,7 @@ StateBox::StateBox(ImageScene *_scene):
     Data* d4 = new Data();
     Data* d5 = new Data();
     Data* d6 = new Data();
-    int sampleSize = 10000;
+    int sampleSize = 1000;
     Point p11(4);
     p11[0] = 0;
     p11[1] = 110;
@@ -105,8 +109,8 @@ StateBox::StateBox(ImageScene *_scene):
     p12[2] = 100;
     p12[3] = 160;
     d1->addData(p12);
-    d1->setMean(Tools::averageMulDim(*d1));
-    d1->setVar(Tools::varianceMulDim(*d1,d1->getMean()));
+    d1->setMean(Tools::averageMulDimNorm(*d1));
+    d1->setVar(Tools::varianceMulDimNorm(*d1,d1->getMean()));
     for(int i = 0; i<sampleSize; i++){
         d1->addSample(Tools::generateMulDim(d1->getMean(),d1->getVar()));
     }
@@ -123,8 +127,8 @@ StateBox::StateBox(ImageScene *_scene):
     p22[2] = 100;
     p22[3] = 160;
     d2->addData(p22);
-    d2->setMean(Tools::averageMulDim(*d2));
-    d2->setVar(Tools::varianceMulDim(*d2,d2->getMean()));
+    d2->setMean(Tools::averageMulDimNorm(*d2));
+    d2->setVar(Tools::varianceMulDimNorm(*d2,d2->getMean()));
     for(int i = 0; i<sampleSize; i++){
         d2->addSample(Tools::generateMulDim(d2->getMean(),d2->getVar()));
     }
@@ -141,8 +145,8 @@ StateBox::StateBox(ImageScene *_scene):
     p32[2] = 100;
     p32[3] = 160;
     d3->addData(p32);
-    d3->setMean(Tools::averageMulDim(*d3));
-    d3->setVar(Tools::varianceMulDim(*d3,d3->getMean()));
+    d3->setMean(Tools::averageMulDimNorm(*d3));
+    d3->setVar(Tools::varianceMulDimNorm(*d3,d3->getMean()));
     for(int i = 0; i<sampleSize; i++){
         d3->addSample(Tools::generateMulDim(d3->getMean(),d3->getVar()));
     }
@@ -171,8 +175,8 @@ StateBox::StateBox(ImageScene *_scene):
     p44[2] = 400;
     p44[3] = 160;
     d4->addData(p44);
-    d4->setMean(Tools::averageMulDim(*d4));
-    d4->setVar(Tools::varianceMulDim(*d4,d4->getMean()));
+    d4->setMean(Tools::averageMulDimNorm(*d4));
+    d4->setVar(Tools::varianceMulDimNorm(*d4,d4->getMean()));
     for(int i = 0; i<sampleSize; i++){
         d4->addSample(Tools::generateMulDim(d4->getMean(),d4->getVar()));
     }
@@ -189,8 +193,8 @@ StateBox::StateBox(ImageScene *_scene):
     p52[2] = 500;
     p52[3] = 150;
     d5->addData(p52);
-    d5->setMean(Tools::averageMulDim(*d5));
-    d5->setVar(Tools::varianceMulDim(*d5,d5->getMean()));
+    d5->setMean(Tools::averageMulDimNorm(*d5));
+    d5->setVar(Tools::varianceMulDimNorm(*d5,d5->getMean()));
     for(int i = 0; i<sampleSize; i++){
         d5->addSample(Tools::generateMulDim(d5->getMean(),d5->getVar()));
     }
@@ -207,26 +211,32 @@ StateBox::StateBox(ImageScene *_scene):
     p62[2] = 500;
     p62[3] = 280;
     d6->addData(p62);
-    d6->setMean(Tools::averageMulDim(*d6));
-    d6->setVar(Tools::varianceMulDim(*d6,d6->getMean()));
+    d6->setMean(Tools::averageMulDimNorm(*d6));
+    d6->setVar(Tools::varianceMulDimNorm(*d6,d6->getMean()));
     for(int i = 0; i<sampleSize; i++){
         d6->addSample(Tools::generateMulDim(d6->getMean(),d6->getVar()));
     }
 
     Tree<Data>* x = new Tree<Data>(d1);
     t.addChild(x);
+    cerr << "enfant 0 branche 1 : " << x << endl;
     x = new Tree<Data>(d2);
     t.addChild(x);
+    cerr << "enfant 0 branche 2 : " << x << endl;
     x = new Tree<Data>(d3);
     t.addChild(x);
+    cerr << "enfant 0 branche 3 : " << x << endl;
     x = new Tree<Data>(d4);
     t[0]->addChild(x);
     t[1]->addChild(x);
     t[2]->addChild(x);
+    cerr << "enfant 1 branche 1 : " << x << endl;
     x = new Tree<Data>(d5);
     (*t[0])[0]->addChild(x);
+    cerr << "enfant 2 branche 1 : " << x << endl;
     x = new Tree<Data>(d6);
     (*t[0])[0]->addChild(x);
+    cerr << "enfant 2 branche 2 : " << x << endl;
 
     _outterborderPen.setWidth(2);
     _outterborderPen.setColor(_outterborderColor);

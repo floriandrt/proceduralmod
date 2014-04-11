@@ -30,6 +30,7 @@ class Point{
         bool operator !=(Point const& p);
         bool operator <(Point const& p);
         bool operator >(Point const& p);
+        bool operator ==(Point const& p);
 };
 
 #endif // POINT_H

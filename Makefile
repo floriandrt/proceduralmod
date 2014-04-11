@@ -1657,6 +1657,16 @@ moc_mainwindow.o: moc_mainwindow.cpp
 moc_ImageScene.o: moc_ImageScene.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_ImageScene.o moc_ImageScene.cpp
 
+test_var: test_var.cpp tools.cpp point.cpp data.cpp
+	g++ -c tools.cpp -o tools.o
+	g++ -c point.cpp -o point.o
+	g++ -c test_var.cpp -o test_var.o
+	g++ -c data.cpp -o data.o
+	g++ test_var.o tools.o point.o data.o -o test_var
+
+clean_var:
+	rm tools.o point.o data.o test_var.o test_var
+
 ####### Install
 
 install:   FORCE

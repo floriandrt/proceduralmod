@@ -195,3 +195,15 @@ bool Point::operator>(Point const& p){
     }
     return true;
 }
+
+bool Point::operator ==(Point const& p){
+    if(p.n != n){
+        return false;
+    }
+    for(int i = 0; i<n; i++){
+        if(data[i] != p.data[i]){
+            return false;
+        }
+    }
+    return true;
+}
