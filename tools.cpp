@@ -228,7 +228,7 @@ bool Tools::isGaussian(Point x, Point mean, double** var, vector<Point> sample){
 //    max += 30;
 //    Point res = rejet(min, max, mean, var, 100000);
 //    Point res = rejet(mean,var,sample);
-    int threshold = 1;
+    int threshold = 10;
     Point normX = Data::normalize4D(x);
     for(int i = 0; i<(int)sample.size(); i++){
         if(normX < (sample[i]+threshold) && normX > (sample[i]-threshold)){

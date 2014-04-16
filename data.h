@@ -37,6 +37,7 @@ class Data{
         void setVar(double** v);
         void addSample(Point value);
         int getPosInsert();
+        void setPosInsert(int pos);
         int xMin();
         int xMax();
         int yMin();
@@ -45,6 +46,7 @@ class Data{
         void updateY(double newY);
         void shiftMinX(double delta);
         void shiftMaxX(double delta);
+        void setSample(std::vector<Point> newSample);
         Point getSample(int i);
         int getSampleSize();
         Point getNormData(int i);

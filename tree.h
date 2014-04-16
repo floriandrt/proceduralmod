@@ -20,6 +20,7 @@ public:
     Tree(T* v);
     Tree(const Tree& t);
     ~Tree();
+    bool testGenerateNode();
     void setValue(T* v);
     T* getValue();
     void setIsLeaf(bool b);
@@ -41,8 +42,10 @@ public:
     void clearRecent();
     Tree<T>* getRecentDataTree(int i);
     std::vector<Tree<T>*>& getRecentVecTree();
+    void setRecentVec(std::vector<Tree<T>*> r);
     int getRecentSize();
     bool notInRecentTree(Tree<T>* t);
+    void insertNode(T* firstHalf, T* secondHalf, std::vector<T*> datas, int nbNode, int connNode);
     Tree<T>* operator[](int ind);
     template<class S>
     friend std::ostream& operator<<(std::ostream& out, const Tree<S>& t);
@@ -72,6 +75,14 @@ Tree<T>::~Tree(){
             delete(children[i]);
         }
     }
+}
+
+template<class T>
+bool Tree<T>::testGenerateNode(){
+    if((rand()%3)==0){
+        return true;
+    }
+    return false;
 }
 
 template<class T>
@@ -189,6 +200,11 @@ std::vector<Tree<T>*>& Tree<T>::getRecentVecTree(){
 }
 
 template<class T>
+void Tree<T>::setRecentVec(std::vector<Tree<T>*> r){
+    recentDataTree = r;
+}
+
+template<class T>
 int Tree<T>::getRecentTreeSize(){
     return recentDataTree.size();
 }
@@ -201,6 +217,27 @@ bool Tree<T>::notInRecentTree(Tree<T>* t){
         }
     }
     return true;
+}
+
+template<class T>
+void Tree<T>::insertNode(T* firstHalf, T* secondHalf, std::vector<T*> datas, int nbNode, int connNode){
+    std::cerr << "ENTREE INSERT NODE" << std::endl;
+    std::vector<Tree<T>*> newChildren;
+    std::vector<Tree<T>*> oldChildren = children;
+    this->value = firstHalf;
+    for(int i = 0; i<nbNode; i++){
+        newChildren.push_back(new Tree<T>(datas[i]));
+        ((newChildren[i])->parents).push_back(this);
+    }
+    children = newChildren;
+    (children[connNode])->addChild(new Tree<T>(secondHalf));
+    ((*(children[connNode]))[0])->children = oldChildren;
+    ((*(children[connNode]))[0])->addParent(children[connNode]);
+    for(int i = 0; i<(int)oldChildren.size(); i++){
+        (oldChildren[i])->clearParents();
+        (oldChildren[i])->addParent((*(children[connNode]))[0]);
+    }
+    std::cerr << "SORTIE INSERT NODE" << std::endl;
 }
 
 template<class T>

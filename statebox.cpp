@@ -217,6 +217,7 @@ StateBox::StateBox(ImageScene *_scene):
         d6->addSample(Tools::generateMulDim(d6->getMean(),d6->getVar()));
     }
 
+    cerr << "enfant -1 branche 0 : " << &t << endl;
     Tree<Data>* x = new Tree<Data>(d1);
     t.addChild(x);
     cerr << "enfant 0 branche 1 : " << x << endl;

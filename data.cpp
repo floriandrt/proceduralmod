@@ -165,15 +165,36 @@ double** Data::getVar(){
     return var;
 }
 
+void Data::setSample(std::vector<Point> newSample){
+    sample.clear();
+    sample = newSample;
+}
+
 vector<Point> Data::getSample(){
     return sample;
 }
 
 void Data::setMean(Point m){
+    /*
+    cerr << "moyenne : " << endl;
+    cerr << m[0] << endl;
+    cerr << m[1] << endl;
+    cerr << m[2] << endl;
+    cerr << m[3] << endl;
+    */
     mean = m;
 }
 
 void Data::setVar(double **v){
+    /*
+    cerr << "variance : " << endl;
+    for(int i = 0; i<4; i++){
+        for(int j = 0; j<4; j++){
+            cerr << " | " << v[i][j];
+        }
+        cerr << endl;
+    }
+    */
     var = v;
 }
 
@@ -183,6 +204,10 @@ void Data::addSample(Point value){
 
 int Data::getPosInsert(){
     return posInsert;
+}
+
+void Data::setPosInsert(int pos){
+    posInsert = pos;
 }
 
 int Data::xMin(){

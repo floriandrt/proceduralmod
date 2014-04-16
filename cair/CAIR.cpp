@@ -1068,11 +1068,11 @@ bool isInVector(vector<T> v, T val){
 
 void printTree(Tree<Data>& t, int rang, vector<Tree<Data>*>& explored){
     for(int i = 0; i<t.getChildrenSize(); i++){
-        printTree(*(t[i]),rang+1, explored);
         if(!isInVector(explored,t[i])){
             cerr << "enfant " << rang << " branche " << i << " : " << t[i] << endl;
             explored.push_back(t[i]);
         }
+        printTree(*(t[i]),rang+1, explored);
     }
 }
 
@@ -1202,10 +1202,13 @@ void findData(Tree<Data>* t, Tree<Data>* root, Point seg2, vector<double*>& inte
 }
 
 void afficherVec(vector<Tree<Data>*> v){
-    for(int i = 0; i<(int)v.size(); i++){
-        cout << " | " << v[i];
+    if(v.size() == 0){
+        cerr << "VECTEUR NULL LORS DE SON AFFICHAGE" << endl;
     }
-    cout << endl;
+    for(int i = 0; i<(int)v.size(); i++){
+        cerr << " | " << v[i];
+    }
+    cerr << endl;
 }
 
 
@@ -1258,9 +1261,11 @@ void moveTreeRecChild(Tree<Data>* t, vector<Tree<Data>*>& exploredTree, int delt
 void moveData(vector<Tree<Data>*> recentTree, int delta){
     cerr << "ENTREE MOVE DATA size : " << recentTree.size() << endl;
     vector<Tree<Data>*> exploredTree = recentTree;
-    moveTreeRecChild(recentTree[0],exploredTree, delta);
-    for(int i = 0; i<(recentTree[0])->getChildrenSize(); i++){
-        moveTreeRecParent((*(recentTree[0]))[i],exploredTree, delta);
+    for(int k = 0; k<(int)recentTree.size(); k++){
+        moveTreeRecChild(recentTree[k],exploredTree, delta);
+        for(int i = 0; i<(recentTree[k])->getChildrenSize(); i++){
+            moveTreeRecParent((*(recentTree[k]))[i],exploredTree, delta);
+        }
     }
     cerr << "SORTIE MOVE DATA" << endl;
 }
@@ -1292,6 +1297,34 @@ void reductionRecentData(Tree<Data>* tRecent, Data* d, int delta, int index, boo
     if(delta < 0){
         cerr << "GROS PROBLEME DELTA ENCORE <0" << endl;
     }
+}
+
+void cutData(Data* d, Data* firstHalf, Data* secondHalf, double interX, double interY, int index, int delta){
+    cerr << "ENTREE CUT DATA" << endl;
+    for(int i = 0; i<index; i++){
+        firstHalf->addData((*d)[i]);
+    }
+    Point halfPoint(4);
+    halfPoint[0] = (*d)[index][0];
+    halfPoint[1] = (*d)[index][1];
+    halfPoint[2] = interX;
+    halfPoint[3] = interY;
+    firstHalf->addData(halfPoint);
+    firstHalf->setMean(d->getMean());
+    firstHalf->setVar(d->getVar());
+    firstHalf->setSample(d->getSample());
+    halfPoint[0] = interX+delta-1;
+    halfPoint[1] = interY;
+    halfPoint[2] = (*d)[index][2];
+    halfPoint[3] = (*d)[index][3];
+    secondHalf->addData(halfPoint);
+    secondHalf->setMean(d->getMean());
+    secondHalf->setVar(d->getVar());
+    secondHalf->setSample(d->getSample());
+    for(int i = index+1; i<d->getDataSize(); i++){
+        secondHalf->addData((*d)[i]);
+    }
+    cerr << "SORTIE CUT DATA" << endl;
 }
 
 void updateRecentData(Tree<Data>& root, int delta){
@@ -1353,25 +1386,76 @@ void newRecentData(Tree<Data>& root, int* min, int imageHeight, int delta){
         seg2[3] = i+1;
         findData(&root, &root, seg2, interMatch, indexMatch);
     }
-    if(delta > 0 && yes to adding a node){
-        for(int i = 0; i<root.getRecentTreeSize(); i++){
-            if(it is ok to add a node here){
-                tRecent = root.getRecentDataTree(i);
-                insertion des noeuds
-            }
-        }
-    }
     bool doClear = false;
     Tree<Data>* tRecent;
     Data* d;
-    //vector<Tree<Data>*> copyRecentTree = root.getRecentVecTree();
+    vector<Tree<Data>*> newRecentTree = root.getRecentVecTree();
     for(int i = 0; i<root.getRecentTreeSize(); i++){
+        cerr << "i : " << i << endl;
         tRecent = root.getRecentDataTree(i);
         d = tRecent->getValue();
+        if(d == NULL){
+            cerr << "DATA NULL problème" << endl;
+        }
         if(delta > 0){
-            Point gen = Tools::generateY(d->getMean(),d->getVar(), interMatch[i][0], interMatch[i][0]+delta-1, interMatch[i][1]);
+            if(root.testGenerateNode()){
+                cerr << "NEW NODE" << endl;
+                int nbNode = 3;
+                int connNode = 1;
+                vector<Data*> newDatas;
+                Data* firstHalf = new Data();
+                Data* secondHalf = new Data();
+                cutData(d,firstHalf,secondHalf,interMatch[i][0],interMatch[i][1],indexMatch[i],delta);
+                if(firstHalf == NULL){
+                    cerr << "firstHalf null" << endl;
+                }
+                if(secondHalf == NULL){
+                    cerr << "secondHalf null" << endl;
+                }
+                Point someMean(4);
+                someMean[0] = 0;
+                someMean[1] = 0;
+                someMean[2] = 50;
+                someMean[3] = 25;
+                double** someVar = new double*[4];
+                for(int j = 0; j<4; j++){
+                    someVar[j] = new double[4];
+                    for(int l = 0; l<4; l++){
+                        someVar[j][l] = 0;
+                    }
+                }
+                someVar[3][3] = 6050;
+                for(int k = 0; k<nbNode; k++){
+                    newDatas.push_back(new Data());
+                    (newDatas[k])->addData(Tools::generateY(someMean,someVar,interMatch[i][0],interMatch[i][0]+delta-1,interMatch[i][1]));
+                    (newDatas[k])->setPosInsert(0);
+                    (newDatas[k])->setMean(someMean);
+                    (newDatas[k])->setVar(someVar);
+                    for(int n = 0; n<d->getSampleSize(); n++){
+                        (newDatas[k])->addSample(Tools::generateMulDim(someMean,someVar));
+                    }
+                }
+                (*secondHalf)[0][0] = interMatch[i][0]+delta-1;
+                (*secondHalf)[0][1] = (*(newDatas[connNode]))[0][3];
+                tRecent->insertNode(firstHalf,secondHalf,newDatas,nbNode,connNode);
+                for(int k = 0; k<(int)newRecentTree.size(); k++){
+                    if(newRecentTree[k] == tRecent){
+                        newRecentTree.erase(newRecentTree.begin()+k);
+                    }
+                }
+                for(int k = 0; k<tRecent->getChildrenSize(); k++){
+                    newRecentTree.push_back((*tRecent)[k]);
+                }
+                vector<Tree<Data>*> explored;
+//                explored.push_back(&root);
+                cerr << "enfant -1 branche 0 : " << &root << endl;
+                printTree(root,0, explored);
+            }else{
+                cerr << "GENERATION ET INSERATION DATA" << endl;
+                Point gen = Tools::generateY(d->getMean(),d->getVar(), interMatch[i][0], interMatch[i][0]+delta-1, interMatch[i][1]);
 //            Point gen = Tools::pickInSample(d, interMatch[i], interMatch[i]+delta-1);
-            d->insertData4D(gen,interMatch[i][0],indexMatch[i]);
+                d->insertData4D(gen,interMatch[i][0],indexMatch[i]);
+            }
         }else if(delta < 0){
             reductionRecentData(tRecent, d, delta, indexMatch[i], doClear);
         }
@@ -1389,6 +1473,12 @@ void newRecentData(Tree<Data>& root, int* min, int imageHeight, int delta){
         }
 
     }
+    if(newRecentTree.size() != 0){
+        root.clearRecent();
+        root.setRecentVec(newRecentTree);
+    }
+    cerr << "AFFICHAGE VECTEUR : " << endl;
+    afficherVec(root.getRecentVecTree());
     moveData(root.getRecentVecTree(), delta);
     if(doClear){
         root.clearRecent();
@@ -1416,7 +1506,8 @@ void CAIR_Data(CML_color * Source, CML_int * S_Weights, int goal_x, CAIR_convolu
         delete[] min;
     }
     vector<Tree<Data>*> explored;
-    explored.push_back(&t);
+//    explored.push_back(&t);
+    cerr << "enfant -1 branche 0 : " << &t << endl;
     printTree(t,0, explored);
     cerr << "CAIR DATA SORTIE" << endl;
 }
